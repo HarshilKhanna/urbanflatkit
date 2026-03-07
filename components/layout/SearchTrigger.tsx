@@ -207,7 +207,7 @@ export function SearchTrigger({ open: controlledOpen, onOpenChange, hideButton }
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? onOpenChange : setInternalOpen;
 
-  /* global keyboard shortcut: ⌘K / Ctrl+K */
+  /* Keyboard shortcut: Cmd+K or Ctrl+K */
   useEffect(() => {
     const handler = (e: globalThis.KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
