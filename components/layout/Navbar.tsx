@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Search, User } from "lucide-react";
+import { Search, User, X } from "lucide-react";
 import { Container } from "./Container";
 import { SearchTrigger } from "./SearchTrigger";
+import { useAccommodation } from "@/context/AccommodationContext";
 
 interface NavbarProps {
   searchOpen?: boolean;
@@ -11,18 +12,48 @@ interface NavbarProps {
 }
 
 export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
+  const { accommodation, clear } = useAccommodation();
+
+  const label =
+    accommodation && accommodation !== "all" ? accommodation : null;
+
   return (
     <header className="bg-[#f5f5f3]">
       <Container className="flex items-center py-4">
-        {/* Left: title */}
-        <div className="flex flex-1 items-center justify-start min-w-0">
+        {/* Left: title + accommodation indicator */}
+        <div className="flex flex-1 items-center justify-start gap-3 min-w-0">
           <span className="font-semibold text-base tracking-tight text-neutral-900">
             UrbanFlatKit
           </span>
+
+          {label && (
+            <span className="hidden items-center gap-1.5 text-[11px] text-neutral-400 sm:flex">
+              Showing for{" "}
+              <span className="font-medium text-neutral-600">{label}</span>
+              <button
+                type="button"
+                onClick={clear}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-600"
+                aria-label="Clear accommodation filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
         </div>
 
-        {/* Mobile: search + admin icons (right) */}
+        {/* Mobile: accommodation badge + search + admin icons */}
         <div className="flex flex-shrink-0 items-center gap-2 md:hidden">
+          {label && (
+            <button
+              type="button"
+              onClick={clear}
+              className="flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-[10px] text-neutral-500 shadow-sm"
+            >
+              {label}
+              <X className="h-3 w-3" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onSearchOpenChange?.(true)}
@@ -40,7 +71,7 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
           </Link>
         </div>
 
-        {/* Desktop: center search bar — same width as hero content (max-w-2xl) */}
+        {/* Desktop: center search bar */}
         <div className="hidden w-full max-w-2xl flex-shrink-0 justify-center px-4 md:flex">
           <button
             type="button"
@@ -54,7 +85,7 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
           </button>
         </div>
 
-        {/* Right: admin button so center bar stays centered (desktop only) */}
+        {/* Right: admin button */}
         <div className="hidden min-w-0 flex-1 items-center justify-end md:flex">
           <Link
             href="/admin"

@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
 import { Item } from "@/types";
 
 interface ItemCardProps {
@@ -11,17 +11,39 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, onClick }: ItemCardProps) {
-  const specEntries = Object.entries(item.specs || {}).slice(0, 2);
+  const specs = item.specs || {};
+  const category = item.category?.toLowerCase() || "";
+
+  const [hoverEnabled, setHoverEnabled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setHoverEnabled(mq.matches);
+
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  let meta: string | undefined;
+
+  if (category === "furniture" || category === "appliances") {
+    meta = specs.Dimensions;
+  } else if (category === "textiles") {
+    meta = specs.Fabric || specs.Material;
+  }
 
   return (
     <motion.div
       onClick={onClick}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={hoverEnabled ? { scale: 1.02 } : undefined}
+      whileTap={hoverEnabled ? { scale: 0.98 } : undefined}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className="group h-full cursor-pointer"
+      className="group cursor-pointer h-64 sm:h-64 md:h-72 xl:h-72"
     >
-      <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[--border] bg-[--tile]">
+      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[--border] bg-[--tile]">
 
         {/* Image — square, fills available width */}
         <div className="relative aspect-square w-full flex-shrink-0">
@@ -31,7 +53,7 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
               alt={item.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain p-6"
+              className="object-contain p-2"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
@@ -49,48 +71,21 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
               </svg>
             </div>
           )}
-
-          {/* Arrow button */}
-          {item.externalUrl && (
-            <a
-              href={item.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={item.externalLabel || `View ${item.name}`}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-neutral-400 shadow-sm ring-1 ring-[--border] transition-colors duration-150 hover:text-neutral-900"
-            >
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </a>
-          )}
         </div>
 
         {/* Meta */}
-        <div className="flex flex-1 flex-col gap-1 px-4 py-3">
+        <div className="flex flex-1 flex-col gap-1 px-3 py-1.5">
           <div className="space-y-0.5">
-            {(item.brand || item.category) && (
-              <p className="truncate text-xs text-[--text-secondary]">
-                {[item.brand, item.category].filter(Boolean).join(" · ")}
-              </p>
-            )}
-            <p className="truncate text-sm font-medium text-[--text-primary]">
+            {/* Line 1: item name */}
+            <p className="truncate text-xs md:text-sm font-semibold text-[--text-primary]">
               {item.name}
             </p>
-          </div>
 
-          {specEntries.length > 0 && (
-            <div className="space-y-0.5">
-              {specEntries.map(([key, value]) => (
-                <p
-                  key={key}
-                  className="line-clamp-1 text-xs text-[--text-secondary]"
-                >
-                  <span className="font-medium">{key}:</span>{" "}
-                  <span>{value}</span>
-                </p>
-              ))}
-            </div>
-          )}
+            {/* Line 2: brand + compact metadata (if any) */}
+            <p className="line-clamp-2 text-[11px] md:text-xs text-[--text-secondary]">
+              {[item.brand, meta].filter(Boolean).join(" · ")}
+            </p>
+          </div>
         </div>
 
       </div>

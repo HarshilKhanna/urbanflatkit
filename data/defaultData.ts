@@ -19,11 +19,11 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/EverCozy-Italino-Luxurious-Furniture-Warranty/dp/B0FYZJN61C/ref=pd_ybh_a_d_sccl_11/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Width: "220 cm",
-                Depth: "90 cm",
-                Height: "90 cm",
+                Dimensions: "220 × 90 × 90 cm",
                 Seats: "3 seater",
               },
+              cardSpecKeys: ["Dimensions"],
+              hasModal: true,
             },
             {
               id: "sofa-single-seater",
@@ -37,11 +37,13 @@ export const DEFAULT_DATA: Tower = {
                 "https://www.orangetree.in/products/fior-1-seater-sofa",
               externalLabel: "via Orange Tree",
               specs: {
-                Dimensions: "107L × 85W × 79H cm",
+                Dimensions: "107 × 85 × 79 cm",
                 Material: "Upholstery + mango wood",
                 Finish: "Light walnut on wood",
                 Seats: "1 seater accent sofa",
               },
+              cardSpecKeys: ["Dimensions", "Material"],
+              hasModal: true,
             },
             {
               id: "centre-table-extensible",
@@ -55,11 +57,13 @@ export const DEFAULT_DATA: Tower = {
                 "https://www.amazon.in/Skaffix-Stacking-Engineered-Black-White/dp/B0FDR2KB3N",
               externalLabel: "via Amazon",
               specs: {
-                Dimensions: "55D × 55W × 45H cm",
+                Dimensions: "55 × 55 × 45 cm",
                 "Max load": "100 kg",
                 Weight: "5 kg",
                 Materials: "Metal frame, engineered wood top",
               },
+              cardSpecKeys: ["Dimensions", "Materials"],
+              hasModal: true,
             },
             {
               id: "tv",
@@ -72,9 +76,11 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/Sony-inches-BRAVIA-Google-K-55S25BM2/dp/B0F7X5FC43/ref=sr_1_1_sspa?sr=8-1-spons&aref=pNXLyGJmAJ&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1",
               externalLabel: "via Amazon",
               specs: {
-                Size: "55 in class",
+                Dimensions: "123 × 71 × 8 cm",
                 Resolution: "4K UHD",
               },
+              cardSpecKeys: ["Dimensions"],
+              hasModal: true,
             },
             {
               id: "tv-cabinet-1",
@@ -87,11 +93,11 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.bluewud.com/collections/tv-unit-furniture/products/blesky-tv-entertainment-unit-set-top-box-stand-tv-cabinet-with-shelves-ideal-for-upto-65-brown-maple-diy",
               externalLabel: "via Bluewud",
               specs: {
-                Width: "180 cm",
-                Height: "55 cm",
-                Depth: "40 cm",
+                Dimensions: "180 × 40 × 55 cm",
                 Storage: "Closed drawers",
               },
+              cardSpecKeys: ["Dimensions"],
+              hasModal: true,
             },
             {
               id: "normal-fan",
@@ -105,8 +111,11 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Sweep: "1200 mm",
+                Dimensions: "120 × 120 × 30 cm",
                 Speed: "3-speed control",
               },
+              cardSpecKeys: ["Sweep"],
+              hasModal: true,
             },
             {
               id: "ac-living",
@@ -121,10 +130,13 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Havells Lloyd",
               specs: {
                 "5 in 1 Convertible": "40 / 60 / 80 / 100 / Auto",
+                Dimensions: "80 × 30 × 23 cm",
                 "Smart 4-Way Swing": "Automatic 4-direction airflow",
                 "Turbo Cool": "Rapid room cooling mode",
                 "Installation Check": "Built-in installation diagnostics",
               },
+              cardSpecKeys: ["5 in 1 Convertible"],
+              hasModal: true,
             },
             {
               id: "living-room-lighting",
@@ -153,7 +165,6 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://shopps.in/product/buddha-statue-green/",
               externalLabel: "via Shopps.in",
               specs: {
-                Sizes: "30 cm, 61 cm, 91 cm",
                 Material: "Marble dust fibre",
                 Dispatch: "Made-to-order, ships in ~1 week",
               },
@@ -171,7 +182,7 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via BeautifyMySpace",
               specs: {
                 Material: "Metal, marble dust, glass",
-                Size: "H 43.18 cm × 10.16 cm",
+    
                 Colour: "Antique brass stand, brown glass shade",
                 Shape: "Conical, three-sphere stem",
                 Use: "Festivals, dining, home decor",
@@ -189,7 +200,7 @@ export const DEFAULT_DATA: Tower = {
                 "https://www.wayfair.com/decor-pillows/pdp/etta-avenue-geometric-modern-metal-candle-holders-w002675046.html",
               externalLabel: "via Wayfair",
               specs: {
-                Dimensions: "6 in H × 8 in D (overall)",
+                
                 Weight: "2.7 lb (set)",
                 Material: "Metal",
                 Candle: "Votive / tealight, set of holders",
@@ -207,7 +218,7 @@ export const DEFAULT_DATA: Tower = {
                 "https://www.amazon.in/RBSK-Handmade-Decorative-Chandelier-Honeycomb/dp/B0FCD5ND3L",
               externalLabel: "via Amazon",
               specs: {
-                Dimensions: "15L × 15W × 25H cm",
+            
                 Power: "20 W, E27 LED (not included)",
                 Room: "Bedroom, dining, home office",
                 Usage: "Indoor pendant lighting",
@@ -225,7 +236,7 @@ export const DEFAULT_DATA: Tower = {
                 "https://www.thegearsclock.com/collections/all/products/wall-clock-real-moving-gears-24-inch-vintage-brown",
               externalLabel: "via The Gears Clock",
               specs: {
-                Diameter: "60 cm",
+                
                 Power: "3 × AA batteries (not included)",
                 Material: "Fir wood frame, plastic gears, metal hands",
                 Style: "Industrial vintage with real moving gears",
@@ -242,9 +253,7 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.com/gp/aw/d/B0BV6S7GJS/?_encoding=UTF8&pd_rd_plhdr=t&aaxitk=cf77e1e25793005e73e7ceef57d26fa9&hsa_cr_id=0&sr=1-3-f02f01d6-adaf-4bef-9a7c-29308eff9043&ref_=sbx__sbtcd2_asin_2_img",
               externalLabel: "via Amazon",
               specs: {
-                Height: "22 cm",
-                Width: "10 cm",
-                Depth: "6 cm",
+                
                 Material: "Resin / stone",
               },
             },
@@ -260,9 +269,7 @@ export const DEFAULT_DATA: Tower = {
                 "https://www.etsy.com/in-en/listing/4346907585/romantic-couple-figurine-love-sculpture",
               externalLabel: "via Etsy",
               specs: {
-                Height: "28 cm",
-                Width: "10 cm",
-                Depth: "8 cm",
+                
                 Theme: "Romantic couple under umbrella",
               },
             },
@@ -278,8 +285,7 @@ export const DEFAULT_DATA: Tower = {
                 "https://violabeuscher.com/en/products/blue-gradient-coffee-cups-set-of-4",
               externalLabel: "via Viola Beuscher",
               specs: {
-                Diameter: "7 cm",
-                Height: "6.5 cm",
+                
                 Capacity: "190 ml per cup",
                 Set: "4 handmade coffee cups",
               },
@@ -296,8 +302,7 @@ export const DEFAULT_DATA: Tower = {
                 "https://thefauxflowercompany.com/en-us/products/red-hybrid-tea-rose",
               externalLabel: "via The Faux Flower Company",
               specs: {
-                Height: "52 cm",
-                Width: "14 cm",
+                
                 Stem: "Wired, can be bent/trimmed",
                 Colour: "Red hybrid tea rose",
               },
@@ -320,10 +325,11 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Seats: "6 seater",
-                Length: "180 cm",
-                Width: "90 cm",
+                Dimensions: "180 × 90 cm",
                 Top: "Marble",
               },
+              cardSpecKeys: ["Dimensions"],
+              hasModal: true,
             },
             {
               id: "cutlery-crockery",
@@ -341,6 +347,8 @@ export const DEFAULT_DATA: Tower = {
                 Bowls: "4",
                 ServingPlatters: "2",
               },
+              cardSpecKeys: [],
+              hasModal: false,
             },
             {
               id: "table-mats",
@@ -354,10 +362,11 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Set: "6 mats",
-                Length: "45 cm",
-                Width: "30 cm",
+                
                 Material: "PVC blend",
               },
+              cardSpecKeys: ["Set", "Material"],
+              hasModal: false,
             },
           
             {
@@ -371,11 +380,12 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/Vendola-Plastic-Decorative-Ceramic-Unbreakable/dp/B0FRYDFDG4/ref=pd_ybh_a_d_sccl_38/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Height: "27 cm",
-                Diameter: "12 cm",
+                
                 Material: "Matte ceramic",
                 Use: "Centrepiece",
               },
+              cardSpecKeys: ["Dimensions", "Material"],
+              hasModal: false,
             },
             {
               id: "dining-glasses",
@@ -390,9 +400,11 @@ export const DEFAULT_DATA: Tower = {
               specs: {
                 Set: "6 glasses",
                 Capacity: "270 ml each",
-                Height: "22 cm",
+              
                 Material: "Crystal glass",
               },
+              cardSpecKeys: ["Capacity"],
+              hasModal: false,
             },
             {
               id: "twin-hanging-lampshade",
@@ -406,8 +418,7 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Count: "2 pendants",
-                Drop: "80 cm adjustable",
-                ShadeDiameter: "18 cm",
+                
                 Finish: "Brushed brass",
               },
             },
@@ -422,8 +433,7 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/KEXES-WOKQIXAK-Classic-Chocolate-Decoration/dp/B0BRT23S7X/ref=pd_ybh_a_d_sccl_15/521-0094499-9118856?psc=1",
               externalLabel: "via Amazon",
               specs: {
-                Diameter: "28 cm",
-                Height: "8 cm",
+                
                 Material: "Pressed glass",
                 Use: "Fruit / snacks",
               },
@@ -439,7 +449,7 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/Artsense-abstract-wishtree-Decoration-Frame-Multicolor/dp/B0DF77RNJB/ref=pd_ybh_a_d_sccl_34/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Size: "50 × 70 cm",
+                
                 Type: "Art print",
               },
             },
@@ -460,10 +470,12 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Burners: "3 burners",
-                Width: "65 cm",
+                Dimensions: "65 × 35 × 12 cm",
                 Body: "Toughened glass",
                 Ignition: "Auto ignition",
               },
+              cardSpecKeys: ["Dimensions", "Body"],
+              hasModal: true,
             },
             {
               id: "induction-hob",
@@ -481,6 +493,8 @@ export const DEFAULT_DATA: Tower = {
                 Control: "Touch panel",
                 Timer: "180 minute",
               },
+              cardSpecKeys: ["Power"],
+              hasModal: true,
             },
             {
               id: "chimney-main",
@@ -493,11 +507,13 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/Faber-Autoclean-Filterless-Collector-Comprehensive/dp/B0F2HGMCL4/ref=pd_ybh_a_d_sccl_35/521-0094499-9118856?psc=1",
               externalLabel: "via Amazon",
               specs: {
-                Width: "60 cm",
+                Dimensions: "60 × 50 × 45 cm",
                 Suction: "1100 m³/h",
                 Filter: "Filterless",
                 Noise: "58 dB",
               },
+              cardSpecKeys: ["Dimensions", "Suction"],
+              hasModal: true,
             },
             {
               id: "double-door-fridge",
@@ -511,10 +527,13 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Capacity: "280 L",
+                Dimensions: "60 × 70 × 170 cm",
                 Doors: "2 doors",
                 Technology: "Convertible 5-in-1",
                 Finish: "Graphite steel",
               },
+              cardSpecKeys: ["Capacity"],
+              hasModal: true,
             },
             {
               id: "electric-kettle",
@@ -532,6 +551,8 @@ export const DEFAULT_DATA: Tower = {
                 Body: "Borosilicate glass",
                 Illumination: "Blue LED ring",
               },
+              cardSpecKeys: ["Capacity"],
+              hasModal: false,
             },
             {
               id: "microwave-oven",
@@ -545,10 +566,13 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Capacity: "25 L",
+                Dimensions: "48 × 35 × 28 cm",
                 Power: "800 W",
                 AutoMenus: "85",
                 Type: "Solo / convection",
               },
+              cardSpecKeys: ["Capacity", "Power"],
+              hasModal: true,
             },
             {
               id: "water-purifier",
@@ -563,9 +587,12 @@ export const DEFAULT_DATA: Tower = {
               specs: {
                 Stages: "6 stage",
                 Tank: "8 L",
+                Dimensions: "30 × 25 × 45 cm",
                 TDSLimit: "2000 ppm",
                 Type: "RO / UV",
               },
+              cardSpecKeys: ["Tank"],
+              hasModal: true,
             },
             {
               id: "countertop-with-drawers",
@@ -579,7 +606,7 @@ export const DEFAULT_DATA: Tower = {
                 "https://pictureperfecthome.co.uk/product/grey-faux-shagreen-leather-and-gold-metal-2-drawer-console-table-desk/",
               externalLabel: "via Picture Perfect Home",
               specs: {
-                Dimensions: "W 130.5 × D 45 × H 76 cm",
+                Dimensions: "130.5 × 45 × 76 cm",
                 Material: "Faux leather, metal, wood",
                 Colour: "Grey, black, gold",
                 Storage: "Two drawers, console table",
@@ -617,11 +644,11 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/Nilkamal-Arthur-Engineered-Without-Storage/dp/B09RZXQZ2N/ref=pd_ybh_a_d_sccl_13/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Size: "Queen / king (160 cm)",
-                Length: "200 cm",
-                HeadboardHeight: "90 cm",
+                Dimensions: "200 × 160 × 90 cm",
                 Storage: "Optional under-bed storage",
               },
+              cardSpecKeys: ["Dimensions"],
+              hasModal: true,
             },
             {
               id: "mattress",
@@ -634,9 +661,11 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/ROMA-PUF-Double-Reversible-Mattress/dp/B0B7BCDYP9/ref=pd_ybh_a_d_sccl_7/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Thickness: "5 in",
+                Dimensions: "200 × 160 × 13 cm",
                 Type: "Foam / spring",
               },
+              cardSpecKeys: ["Dimensions", "Type"],
+              hasModal: true,
             },
             // removed bedside table and working table per requirements
             {
@@ -650,11 +679,11 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/casa-Table-Portable-Lamp-Housewarming/dp/B06XWBCJYL/ref=pd_ybh_a_d_sccl_44/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Height: "45 cm",
-                ShadeDiameter: "25 cm",
-                BaseDiameter: "15 cm",
+                
                 Type: "Table lamp",
               },
+              cardSpecKeys: ["Dimensions"],
+              hasModal: false,
             },
             {
               id: "bedroom-curtains",
@@ -667,9 +696,11 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/HFI-Royal-Silky-Grommet-Curtain/dp/B08WHN8SWZ/ref=pd_ybh_a_d_sccl_21/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Drop: "7 feet",
+              
                 Type: "Blackout / sheer mix",
               },
+              cardSpecKeys: [],
+              hasModal: false,
             },
             {
               id: "pillow-covers",
@@ -683,7 +714,7 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Set: "4 covers",
-                Size: "45 × 70 cm",
+                
                 Fabric: "Chenille blend",
                 Closure: "Hidden zipper",
               },
@@ -699,7 +730,7 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/Artment-artistic-apartment-Floor-Mirror/dp/B0DQ4XVSCV/ref=pd_ybh_a_d_sccl_20/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Height: "155 cm",
+                
                 Placement: "Lean or wall-mounted",
               },
             },
@@ -714,7 +745,7 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/DSH-Hanging-Office-Bedroom-Decoration/dp/B09TJCNM6H/ref=pd_bxgy_thbs_d_sccl_1/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Size: "46 x 19 inches",
+                
                 Type: "Framed art",
               },
             },
@@ -729,7 +760,7 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/RIANZ%C2%AE-Pair-Luxury-Showpiece-Living/dp/B0FQ3XMKPX/ref=pd_ybh_a_d_sccl_22/521-0094499-9118856",
               externalLabel: "via Amazon",
               specs: {
-                Height: "22.5 cm",
+                
                 Style: "Modern",
               },
             },
@@ -750,8 +781,10 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Mounting: "Floor standing",
-                Dimensions: "23D × 23W × 56H cm",
+                
               },
+              cardSpecKeys: [],
+              hasModal: false,
             },
             // removed doormats and shoe rack per requirements
             {
@@ -765,11 +798,12 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/R-CREATIVES-Frame-Decorative-Wall-Mounted/dp/B0FCD7V523/ref=sr_1_10?s=kitchen&sr=1-10",
               externalLabel: "via Amazon",
               specs: {
-                Diameter: "70 cm",
-                FrameDepth: "3 cm",
+                
                 Weight: "4 kg",
                 Shape: "Circular",
               },
+              cardSpecKeys: ["Dimensions"],
+              hasModal: true,
             },
           ],
         },
@@ -789,10 +823,13 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Capacity: "8 kg",
+                Dimensions: "54 × 56 × 90 cm",
                 SpinSpeed: "780 rpm",
                 Pulsator: "Turbodrum",
                 Type: "Top load",
               },
+              cardSpecKeys: ["Capacity"],
+              hasModal: true,
             },
             {
               id: "iron",
@@ -809,23 +846,7 @@ export const DEFAULT_DATA: Tower = {
                 Type: "Dry",
               },
             },
-            {
-              id: "ironing-board",
-              name: "Ironing Board",
-              brand: "Bathla",
-              category: "Furniture",
-              description:
-                "Foldable ironing board for pressing clothes.",
-              imageUrl: "/ironboard.jpg",
-              externalUrl: "https://www.amazon.in/ATHENACREATIONS-Multi-Purpose-Convertible-Multi-Use-Foldable/dp/B01MYGSIUO/ref=pd_ybh_a_d_sccl_10/521-0094499-9118856",
-              externalLabel: "via Amazon",
-              specs: {
-                Length: "120 cm",
-                Width: "38 cm",
-                Height: "90 cm",
-                Feature: "Foldable",
-              },
-            },
+            
             // removed foldable chair per requirements
             {
               id: "air-purifier",
@@ -839,6 +860,7 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Coverage: "183 sq ft",
+              
                 CADR: "90 m³/h",
                 FanSpeeds: "3",
                 Filter: "HEPA",
@@ -873,8 +895,7 @@ export const DEFAULT_DATA: Tower = {
               externalLabel: "via Amazon",
               specs: {
                 Capacity: "280 ml",
-                Height: "18 cm",
-                Diameter: "7 cm",
+                
                 Finish: "Marble effect",
               },
             },
@@ -889,8 +910,7 @@ export const DEFAULT_DATA: Tower = {
               externalUrl: "https://www.amazon.in/Bathroom-Control-Circular-Illuminated-Pattern/dp/B0GFLNNQ61/ref=pd_ybh_a_d_sccl_17/521-0094499-9118856?psc=1",
               externalLabel: "via Amazon",
               specs: {
-                Diameter: "72 cm",
-                Depth: "3 cm",
+              
                 Weight: "6 kg",
                 Shape: "Circular",
               },

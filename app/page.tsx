@@ -15,7 +15,8 @@ export default function Home() {
         searchOpen={searchOpen}
         onSearchOpenChange={setSearchOpen}
       />
-      <Hero />
+      {/* Hero temporarily disabled; will be added back later */}
+      {/* <Hero /> */}
       <main id="browse" className="flex-1">
         <BrowseShell />
       </main>

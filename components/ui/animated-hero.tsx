@@ -68,6 +68,7 @@ function Hero() {
     <div className="relative w-full overflow-hidden bg-[#f5f5f3]">
       <div className="relative mx-auto max-w-[1400px] px-4">
         <div className="flex flex-col items-center gap-4 py-8 lg:py-12">
+          {/* Hero heading and copy commented out for now.
           <div className="flex flex-col items-center gap-3 text-center">
             <h1 className="flex max-w-2xl flex-col items-center text-center text-3xl font-normal tracking-tight text-neutral-900 md:text-5xl">
               <span className="block">Explore the sample flat</span>
@@ -87,6 +88,7 @@ function Hero() {
               key details visible at a glance.
             </p>
           </div>
+          */}
         </div>
       </div>
     </div>
