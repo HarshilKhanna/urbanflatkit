@@ -11,6 +11,8 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, onClick }: ItemCardProps) {
+  const specEntries = Object.entries(item.specs || {}).slice(0, 2);
+
   return (
     <motion.div
       onClick={onClick}
@@ -63,16 +65,32 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
           )}
         </div>
 
-        {/* Meta — fixed height so every card is identical */}
-        <div className="flex h-[62px] flex-shrink-0 flex-col justify-center px-4">
-          {(item.brand || item.category) && (
-            <p className="truncate text-xs text-[--text-secondary]">
-              {[item.brand, item.category].filter(Boolean).join(" · ")}
+        {/* Meta */}
+        <div className="flex flex-1 flex-col gap-1 px-4 py-3">
+          <div className="space-y-0.5">
+            {(item.brand || item.category) && (
+              <p className="truncate text-xs text-[--text-secondary]">
+                {[item.brand, item.category].filter(Boolean).join(" · ")}
+              </p>
+            )}
+            <p className="truncate text-sm font-medium text-[--text-primary]">
+              {item.name}
             </p>
+          </div>
+
+          {specEntries.length > 0 && (
+            <div className="space-y-0.5">
+              {specEntries.map(([key, value]) => (
+                <p
+                  key={key}
+                  className="line-clamp-1 text-xs text-[--text-secondary]"
+                >
+                  <span className="font-medium">{key}:</span>{" "}
+                  <span>{value}</span>
+                </p>
+              ))}
+            </div>
           )}
-          <p className="truncate text-sm font-medium text-[--text-primary]">
-            {item.name}
-          </p>
         </div>
 
       </div>

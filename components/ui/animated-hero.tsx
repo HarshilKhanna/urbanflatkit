@@ -70,7 +70,7 @@ function Hero() {
         <div className="flex flex-col items-center gap-4 py-8 lg:py-12">
           <div className="flex flex-col items-center gap-3 text-center">
             <h1 className="flex max-w-2xl flex-col items-center text-center text-3xl font-normal tracking-tight text-neutral-900 md:text-5xl">
-              <span className="block">Curate your space with</span>
+              <span className="block">Explore the sample flat</span>
               <span className="mt-1 block min-h-[1.2em] font-semibold text-neutral-900">
                 {displayText}
                 <motion.span
@@ -83,8 +83,8 @@ function Hero() {
             </h1>
 
             <p className="max-w-xl text-sm leading-relaxed tracking-tight text-[var(--text-secondary)] md:text-base">
-              Discover and organize products for your flat—one place to browse,
-              filter, and save what you love.
+              See every item used to furnish this flat&mdash;room by room, with
+              key details visible at a glance.
             </p>
           </div>
         </div>

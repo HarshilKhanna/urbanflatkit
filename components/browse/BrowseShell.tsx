@@ -60,6 +60,17 @@ export function BrowseShell() {
       />
 
       <section className="mx-auto max-w-[1400px] px-4 pt-8 pb-20">
+        <header className="mb-6 space-y-1">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
+            Items used in this flat
+          </h2>
+          <p className="max-w-2xl text-sm text-[--text-secondary]">
+            Browse everything placed in the sample flat across living, dining,
+            bedroom, and kitchen&mdash;filters help you jump to a category, and
+            each card surfaces the most important details immediately.
+          </p>
+        </header>
+
         <ItemGrid
           items={visibleItems}
           onItemClick={setSelectedItem}

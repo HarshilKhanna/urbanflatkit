@@ -1,6 +1,7 @@
 "use client";
 
-import { Search } from "lucide-react";
+import Link from "next/link";
+import { Search, User } from "lucide-react";
 import { Container } from "./Container";
 import { SearchTrigger } from "./SearchTrigger";
 
@@ -20,15 +21,24 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
           </span>
         </div>
 
-        {/* Mobile: search icon only (right) */}
-        <button
-          type="button"
-          onClick={() => onSearchOpenChange?.(true)}
-          aria-label="Search"
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50 md:hidden"
-        >
-          <Search className="h-4 w-4" />
-        </button>
+        {/* Mobile: search + admin icons (right) */}
+        <div className="flex flex-shrink-0 items-center gap-2 md:hidden">
+          <button
+            type="button"
+            onClick={() => onSearchOpenChange?.(true)}
+            aria-label="Search"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+          <Link
+            href="/admin"
+            aria-label="Admin"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+          >
+            <User className="h-4 w-4" />
+          </Link>
+        </div>
 
         {/* Desktop: center search bar — same width as hero content (max-w-2xl) */}
         <div className="hidden w-full max-w-2xl flex-shrink-0 justify-center px-4 md:flex">
@@ -44,8 +54,16 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
           </button>
         </div>
 
-        {/* Right: spacer so center bar is truly centered (desktop only) */}
-        <div className="hidden flex-1 min-w-0 md:block" aria-hidden />
+        {/* Right: admin button so center bar stays centered (desktop only) */}
+        <div className="hidden min-w-0 flex-1 items-center justify-end md:flex">
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+          >
+            <User className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Admin</span>
+          </Link>
+        </div>
 
         <SearchTrigger
           open={searchOpen}
