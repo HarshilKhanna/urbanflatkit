@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { Hero } from "@/components/ui/animated-hero";
+// import { Hero } from "@/components/ui/animated-hero";
 import { BrowseShell } from "@/components/browse/BrowseShell";
 
 export default function Home() {
