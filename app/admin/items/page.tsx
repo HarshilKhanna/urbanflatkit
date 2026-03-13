@@ -621,7 +621,7 @@ function ItemDrawer({
             <label className={labelCls}>Category</label>
             <select
               value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as AdminItem["category"] }))}
               className={inputCls}
             >
               <option value="">Select category…</option>
