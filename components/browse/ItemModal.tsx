@@ -208,12 +208,6 @@ export function ItemModal({ item, onClose, onSelectItem }: ItemModalProps) {
                     </h2>
                   </div>
 
-                  {item.description && (
-                    <p className="text-sm leading-relaxed text-neutral-600">
-                      {item.description}
-                    </p>
-                  )}
-
                   {specs.length > 0 && (
                     <div>
                       <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
@@ -243,7 +237,7 @@ export function ItemModal({ item, onClose, onSelectItem }: ItemModalProps) {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700"
                       >
-                        {item.externalLabel || "Find this item"}
+                        Find this item
                         <ArrowUpRight className="h-3.5 w-3.5" />
                       </a>
                     </div>
