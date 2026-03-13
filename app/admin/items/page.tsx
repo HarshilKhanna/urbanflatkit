@@ -145,7 +145,7 @@ function fromAdminItem(a: AdminItem): Item {
     externalUrl: a.externalUrl.trim(),
     specs,
     cardSpecKeys,
-    displayPosition: a.displayPosition,
+    displayPosition: a.displayPosition ?? undefined,
   };
 }
 
