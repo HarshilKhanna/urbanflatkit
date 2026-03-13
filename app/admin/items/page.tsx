@@ -470,7 +470,7 @@ function ItemDrawer({
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useMemo(() => { if (open) setForm(initial); }, [open]);
+  useMemo(() => { if (open) { setForm(initial); setErrors({}); } }, [open]);
 
   const cardCount = form.specs.filter((s) => s.showOnCard).length;
 
