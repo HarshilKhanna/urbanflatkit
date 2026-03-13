@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const allItems = useMemo(() => flattenItems(data), [data]);
 
   const stats = useMemo(() => {
-    const counts: Record<string, number> = {};
+    const counts = {} as Record<typeof STAT_CATEGORIES[number], number>;
     for (const cat of STAT_CATEGORIES) {
       counts[cat] = allItems.filter((i) => i.category.toLowerCase() === cat.toLowerCase()).length;
     }

@@ -19,7 +19,6 @@ const CATEGORY_OPTIONS = [
   "Lighting",
   "Decor",
   "Textiles",
-  "Accessories",
   "Appliances",
 ] as const;
 
