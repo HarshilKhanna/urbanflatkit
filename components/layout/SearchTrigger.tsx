@@ -66,7 +66,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  const handleSelect = (_item: Item) => {
+  const handleSelect = () => {
     onClose();
   };
 
@@ -80,7 +80,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       setCursor((c) => Math.max(c - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (results[cursor]) handleSelect(results[cursor]);
+      if (results[cursor]) handleSelect();
     }
   };
 
@@ -145,7 +145,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   <li key={item.id}>
                     <button
                       onMouseEnter={() => setCursor(i)}
-                      onClick={() => handleSelect(item)}
+                      onClick={() => handleSelect()}
                       className={[
                         "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
                         i === cursor ? "bg-neutral-50" : "hover:bg-neutral-50",
