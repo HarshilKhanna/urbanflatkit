@@ -140,10 +140,9 @@ function fromAdminItem(a: AdminItem, existing?: Item): Item {
     name: a.name.trim(),
     brand: a.brand.trim(),
     category: a.category,
-    description: existing?.description ?? "",
+
     imageUrl: a.imageData,
     externalUrl: a.externalUrl.trim(),
-    externalLabel: existing?.externalLabel ?? "View item",
     specs,
     cardSpecKeys,
     displayPosition: a.displayPosition,
