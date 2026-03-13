@@ -2,7 +2,7 @@ export interface Item {
   id: string
   name: string
   brand: string
-  category: "Furniture" | "Lighting" | "Decor" | "Textiles" | "Accessories" | "Appliances"
+  category: "Furniture" | "Lighting" | "Decor" | "Textiles" | "Appliances"
   imageUrl: string
   externalUrl: string
   specs: Record<string, string>
