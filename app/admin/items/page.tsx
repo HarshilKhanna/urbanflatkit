@@ -125,7 +125,7 @@ function toAdminItem(item: Item): AdminItem {
   };
 }
 
-function fromAdminItem(a: AdminItem, existing?: Item): Item {
+function fromAdminItem(a: AdminItem): Item {
   const specs: Record<string, string> = {};
   const cardSpecKeys: string[] = [];
   for (const row of a.specs) {
@@ -778,7 +778,7 @@ export default function ItemsPage() {
   };
 
   const handleSave = (adminItem: AdminItem) => {
-    const item = fromAdminItem(adminItem, editingItem);
+    const item = fromAdminItem(adminItem);
     if (drawerMode === "edit") {
       updateItem(item.id, item);
     } else {
