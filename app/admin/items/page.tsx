@@ -39,8 +39,7 @@ const CATEGORY_ORDER: Record<string, number> = {
   lighting: 1,
   decor: 2,
   textiles: 3,
-  accessories: 4,
-  appliances: 5,
+  appliances: 4,
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -57,7 +56,7 @@ type AdminItem = {
   id: string;
   name: string;
   brand: string;
-  category: string;
+  category: "Furniture" | "Lighting" | "Decor" | "Textiles" | "Appliances";
   externalUrl: string;
   imageData: string;
   displayPosition: number | null;
