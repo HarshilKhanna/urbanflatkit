@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Item } from "@/types";
+import { trackEvent } from "@/lib/analytics";
 
 interface ItemCardProps {
   item: Item;
@@ -14,6 +15,7 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
   const specs = item.specs || {};
 
   const [hoverEnabled, setHoverEnabled] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -33,9 +35,41 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
     .filter(Boolean)
     .join(" · ") || undefined;
 
+  const handleMouseEnter = () => {
+    hoverTimer.current = setTimeout(() => {
+      try {
+        trackEvent("item_hovered", {
+          itemId: item.id,
+          itemName: item.name,
+          category: item.category,
+        });
+      } catch {}
+    }, 500);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+  };
+
+  const handleClick = () => {
+    try {
+      trackEvent("item_clicked", {
+        itemId: item.id,
+        itemName: item.name,
+        category: item.category,
+      });
+    } catch {}
+    onClick?.();
+  };
+
   return (
     <motion.div
-      onClick={onClick}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       whileHover={hoverEnabled ? { scale: 1.02 } : undefined}
       whileTap={hoverEnabled ? { scale: 0.98 } : undefined}
       transition={{ duration: 0.18, ease: "easeOut" }}

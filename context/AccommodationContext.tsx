@@ -5,8 +5,11 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   ReactNode,
 } from "react";
+
+const STORAGE_KEY = "urbanflatkit_accommodation";
 
 const ACCOMMODATION_TIER: Record<string, number> = {
   "PG / shared accommodation": 1,
@@ -58,6 +61,7 @@ interface AccommodationContextValue {
   showPrompt: boolean;
   openPrompt: () => void;
   select: (value: AccommodationType) => void;
+  dismiss: () => void;
   clear: () => void;
   fitsAccommodation: (item: {
     category: string;
@@ -87,6 +91,14 @@ export function AccommodationProvider({ children }: { children: ReactNode }) {
   const [accommodation, setAccommodation] = useState<string | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
+  // Rehydrate from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setAccommodation(saved);
+    } catch {}
+  }, []);
+
   const promptNeeded = accommodation === null;
 
   const openPrompt = useCallback(() => {
@@ -97,21 +109,32 @@ export function AccommodationProvider({ children }: { children: ReactNode }) {
     const stored = value === "Show all items" ? "all" : value;
     setAccommodation(stored);
     setShowPrompt(false);
+    try { localStorage.setItem(STORAGE_KEY, stored); } catch {}
+  }, []);
+
+  const dismiss = useCallback(() => {
+    setAccommodation("skipped");
+    setShowPrompt(false);
+    try { localStorage.setItem(STORAGE_KEY, "skipped"); } catch {}
   }, []);
 
   const clear = useCallback(() => {
-    setAccommodation(null);
+    // User explicitly cleared the current accommodation badge.
+    // Treat this the same as "Skip for now": remove the filter and
+    // remember that we shouldn't prompt again in this browser.
+    setAccommodation("skipped");
     setShowPrompt(false);
+    try { localStorage.setItem(STORAGE_KEY, "skipped"); } catch {}
   }, []);
 
   const tier =
-    accommodation === null || accommodation === "all"
+    accommodation === null || accommodation === "all" || accommodation === "skipped"
       ? null
       : ACCOMMODATION_TIER[accommodation] ?? 3;
 
   const fitsAccommodation = useCallback(
     (item: { category: string; specs?: Record<string, string> }) => {
-      if (accommodation === null || accommodation === "all") return true;
+      if (accommodation === null || accommodation === "all" || accommodation === "skipped") return true;
 
       const cat = item.category.toLowerCase();
       if (cat !== "furniture" && cat !== "appliances") return true;
@@ -138,6 +161,7 @@ export function AccommodationProvider({ children }: { children: ReactNode }) {
         showPrompt,
         openPrompt,
         select,
+        dismiss,
         clear,
         fitsAccommodation,
       }}

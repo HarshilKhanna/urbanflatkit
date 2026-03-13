@@ -11,6 +11,7 @@ import {
   ACCOMMODATION_OPTIONS,
   AccommodationType,
 } from "@/context/AccommodationContext";
+import { trackEvent } from "@/lib/analytics";
 
 function flattenItems(tower: ReturnType<typeof useData>["data"]): Item[] {
   return tower.flats.flatMap((flat) =>
@@ -74,6 +75,7 @@ export function BrowseShell() {
     showPrompt,
     openPrompt,
     select,
+    dismiss,
     fitsAccommodation,
   } = useAccommodation();
 
@@ -128,21 +130,29 @@ export function BrowseShell() {
         />
       </section>
 
-      {showPrompt && <AccommodationPrompt onSelect={select} />}
+      {showPrompt && <AccommodationPrompt onSelect={select} onSkip={dismiss} />}
     </>
   );
 }
 
+/** Strip redundant words to keep card labels short */
+function shortLabel(opt: string): string {
+  return opt
+    .replace(/ apartment$/i, "")
+    .replace(/^Show all items$/i, "Show all");
+}
+
 function AccommodationPrompt({
   onSelect,
+  onSkip,
 }: {
   onSelect: (value: AccommodationType) => void;
+  onSkip: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:px-4">
-      {/* On mobile: full-width bottom sheet. On sm+: centered card */}
       <div
-        className="w-full max-w-full rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-2xl"
+        className="w-full max-w-full rounded-t-2xl bg-white px-5 pt-4 pb-6 shadow-xl sm:max-w-lg sm:rounded-2xl sm:px-6 sm:pt-6 sm:pb-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle — mobile only */}
@@ -151,31 +161,39 @@ function AccommodationPrompt({
         </div>
 
         <h2 className="mb-1 text-sm font-semibold text-neutral-900">
-          What type of home are you shopping for?
+          What&rsquo;s your space like?
         </h2>
-        <p className="mb-4 text-xs text-neutral-500">
+        <p className="mb-5 text-xs text-neutral-500">
           We&rsquo;ll show you items that fit your space.
         </p>
 
-        <div className="max-h-64 overflow-y-auto rounded-lg border border-neutral-200">
-          {ACCOMMODATION_OPTIONS.map((opt, i) => (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {ACCOMMODATION_OPTIONS.map((opt) => (
             <button
               key={opt}
               type="button"
-              onClick={() => onSelect(opt)}
-              className={`flex min-h-[44px] w-full items-center px-3 py-2.5 text-left text-xs text-neutral-700 transition-colors hover:bg-neutral-50 ${
-                i !== ACCOMMODATION_OPTIONS.length - 1
-                  ? "border-b border-neutral-100"
-                  : ""
-              }`}
+              onClick={() => {
+                try {
+                  trackEvent("accommodation_selected", { accommodationType: opt });
+                } catch {}
+                onSelect(opt);
+              }}
+              className="min-h-[52px] rounded-xl border border-neutral-200 bg-white px-3 py-3 text-left text-xs font-semibold text-neutral-700 transition-all hover:border-neutral-400 hover:bg-neutral-50 active:scale-[0.98]"
             >
-              {opt}
+              {shortLabel(opt)}
             </button>
           ))}
         </div>
 
-        {/* Bottom safe area on mobile */}
-        <div className="pb-2 sm:pb-0" />
+        <div className="mt-5 flex justify-center">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="text-xs text-neutral-400 underline-offset-2 transition-colors hover:text-neutral-600 hover:underline"
+          >
+            Skip for now
+          </button>
+        </div>
       </div>
     </div>
   );

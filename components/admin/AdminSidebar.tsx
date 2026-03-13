@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, ArrowLeft, LogOut, X } from "lucide-react";
+import { LayoutDashboard, Package, BarChart2, ArrowLeft, LogOut, X } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/items", label: "Items", icon: Package },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
 ];
 
 interface AdminSidebarProps {

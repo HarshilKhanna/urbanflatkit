@@ -9,7 +9,9 @@ export function Navbar() {
   const { accommodation, clear } = useAccommodation();
 
   const label =
-    accommodation && accommodation !== "all" ? accommodation : null;
+    accommodation && accommodation !== "all" && accommodation !== "skipped"
+      ? accommodation
+      : null;
 
   return (
     <header className="bg-[#f5f5f3]">
