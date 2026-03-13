@@ -3,12 +3,10 @@
 import {
   useMemo,
   useState,
-  useCallback,
   useRef,
   FormEvent,
   ChangeEvent,
 } from "react";
-import Image from "next/image";
 import { X, Plus, Trash2, Upload } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useData } from "@/context/DataContext";
@@ -447,7 +445,6 @@ function ItemDrawer({
   open,
   mode,
   initial,
-  existingItem,
   takenPositions,
   onClose,
   onSave,
@@ -455,7 +452,6 @@ function ItemDrawer({
   open: boolean;
   mode: "add" | "edit";
   initial: Omit<AdminItem, "id"> & { id?: string };
-  existingItem?: Item;
   /** Positions already occupied by OTHER items (excluding the item being edited) */
   takenPositions: number[];
   onClose: () => void;
@@ -994,7 +990,6 @@ export default function ItemsPage() {
         open={drawerOpen}
         mode={drawerMode}
         initial={drawerInitial}
-        existingItem={editingItem}
         takenPositions={allItems
           .filter((i) => i.displayPosition != null && i.id !== editingItem?.id)
           .map((i) => i.displayPosition as number)}
