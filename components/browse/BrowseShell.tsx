@@ -36,6 +36,15 @@ function primaryDimension(item: Item): number {
 
 function featuredSort(items: Item[]): Item[] {
   return [...items].sort((a, b) => {
+    const posA = a.displayPosition ?? null;
+    const posB = b.displayPosition ?? null;
+
+    // Pinned items always come first, sorted by position ascending
+    if (posA !== null && posB !== null) return posA - posB;
+    if (posA !== null) return -1;
+    if (posB !== null) return 1;
+
+    // Unpinned: sort by category then dimension descending
     const catA = CATEGORY_ORDER[a.category.toLowerCase()] ?? 99;
     const catB = CATEGORY_ORDER[b.category.toLowerCase()] ?? 99;
     if (catA !== catB) return catA - catB;
@@ -130,11 +139,17 @@ function AccommodationPrompt({
   onSelect: (value: AccommodationType) => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:px-4">
+      {/* On mobile: full-width bottom sheet. On sm+: centered card */}
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+        className="w-full max-w-full rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle — mobile only */}
+        <div className="mb-4 flex justify-center sm:hidden">
+          <div className="h-1 w-10 rounded-full bg-neutral-200" />
+        </div>
+
         <h2 className="mb-1 text-sm font-semibold text-neutral-900">
           What type of home are you shopping for?
         </h2>
@@ -148,7 +163,7 @@ function AccommodationPrompt({
               key={opt}
               type="button"
               onClick={() => onSelect(opt)}
-              className={`flex w-full items-center px-3 py-2.5 text-left text-xs text-neutral-700 transition-colors hover:bg-neutral-50 ${
+              className={`flex min-h-[44px] w-full items-center px-3 py-2.5 text-left text-xs text-neutral-700 transition-colors hover:bg-neutral-50 ${
                 i !== ACCOMMODATION_OPTIONS.length - 1
                   ? "border-b border-neutral-100"
                   : ""
@@ -158,6 +173,9 @@ function AccommodationPrompt({
             </button>
           ))}
         </div>
+
+        {/* Bottom safe area on mobile */}
+        <div className="pb-2 sm:pb-0" />
       </div>
     </div>
   );

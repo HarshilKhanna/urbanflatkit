@@ -7,7 +7,7 @@ import { ItemCard } from "./ItemCard";
 const container = {
   hidden: {},
   visible: {
-    transition: { staggerChildren: 0.055, delayChildren: 0.05 },
+    transition: { staggerChildren: 0.04, delayChildren: 0.04 },
   },
 };
 
@@ -38,7 +38,7 @@ export function ItemGrid({ items, onItemClick, animationKey }: ItemGridProps) {
   return (
     <motion.div
       key={animationKey}
-      className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2 md:grid-cols-4 md:gap-2.5 xl:grid-cols-6 xl:gap-3"
+      className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 lg:grid-cols-6"
       variants={container}
       initial="hidden"
       animate="visible"

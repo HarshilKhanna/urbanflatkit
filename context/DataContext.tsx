@@ -9,11 +9,17 @@ import {
 } from "react";
 import type { Item, Tower } from "@/types";
 import { DEFAULT_DATA } from "@/data/defaultData";
-
-const STORAGE_KEY = "urbanflatkit_data";
+import {
+  getAllItems,
+  addItem as fsAdd,
+  updateItem as fsUpdate,
+  deleteItem as fsDelete,
+} from "@/lib/firestore";
 
 interface DataContextValue {
   data: Tower;
+  /** True while the initial Firestore fetch is in flight */
+  loading: boolean;
   addItem: (item: Item) => void;
   updateItem: (id: string, patch: Partial<Item>) => void;
   deleteItem: (id: string) => void;
@@ -21,96 +27,69 @@ interface DataContextValue {
 
 const DataContext = createContext<DataContextValue | null>(null);
 
-function loadData(): Tower {
-  if (typeof window === "undefined") return DEFAULT_DATA;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as Tower;
-  } catch {
-    // corrupt storage – fall through to default
-  }
-  return DEFAULT_DATA;
+/** Wrap a flat Item[] into the Tower shape that all existing components expect. */
+function toTower(items: Item[]): Tower {
+  return { flats: [{ rooms: [{ items }] }] };
+}
+
+/** Pull every item out of the nested Tower into a flat array. */
+function flattenTower(tower: Tower): Item[] {
+  return tower.flats.flatMap((f) => f.rooms.flatMap((r) => r.items));
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  // Start from the bundled default so the page renders immediately (no blank flash)
   const [data, setData] = useState<Tower>(DEFAULT_DATA);
+  const [loading, setLoading] = useState(true);
 
-  const persist = (value: Tower) => {
-    if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
-    } catch {
-      // ignore write errors
-    }
-  };
+  useEffect(() => {
+    getAllItems()
+      .then((items) => {
+        if (items.length > 0) {
+          // Firestore has data — use it
+          setData(toTower(items));
+        }
+        // If collection is empty (not yet migrated) keep DEFAULT_DATA visible
+      })
+      .catch((err) => {
+        console.error("Firestore fetch failed — showing local data:", err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ─── Mutations — optimistic local update then async Firestore sync ───────
 
   const addItem: DataContextValue["addItem"] = (item) => {
-    setData((prev) => {
-      // Create a deep-ish copy so we don't mutate existing state
-      const next: Tower = {
-        flats: prev.flats.map((flat) => ({
-          rooms: flat.rooms.map((room) => ({
-            items: [...room.items],
-          })),
-        })),
-      };
-
-      if (!next.flats.length) {
-        next.flats = [{ rooms: [{ items: [item] }] }];
-      } else if (!next.flats[0].rooms.length) {
-        next.flats[0].rooms = [{ items: [item] }];
-      } else {
-        next.flats[0].rooms[0].items.push(item);
-      }
-
-      persist(next);
-      return next;
-    });
+    setData((prev) => toTower([...flattenTower(prev), item]));
+    fsAdd(item).catch((err) =>
+      console.error("Firestore addItem failed:", err)
+    );
   };
 
   const updateItem: DataContextValue["updateItem"] = (id, patch) => {
-    setData((prev) => {
-      let changed = false;
-      const next: Tower = {
-        flats: prev.flats.map((flat) => ({
-          rooms: flat.rooms.map((room) => ({
-            items: room.items.map((existing) => {
-              if (existing.id !== id) return existing;
-              changed = true;
-              return { ...existing, ...patch };
-            }),
-          })),
-        })),
-      };
-      if (changed) persist(next);
-      return changed ? next : prev;
-    });
+    setData((prev) =>
+      toTower(
+        flattenTower(prev).map((item) =>
+          item.id === id ? { ...item, ...patch } : item
+        )
+      )
+    );
+    fsUpdate(id, patch).catch((err) =>
+      console.error("Firestore updateItem failed:", err)
+    );
   };
 
   const deleteItem: DataContextValue["deleteItem"] = (id) => {
-    setData((prev) => {
-      let changed = false;
-      const next: Tower = {
-        flats: prev.flats.map((flat) => ({
-          rooms: flat.rooms.map((room) => {
-            const items = room.items.filter((item) => item.id !== id);
-            if (items.length !== room.items.length) changed = true;
-            return { items };
-          }),
-        })),
-      };
-      if (changed) persist(next);
-      return changed ? next : prev;
-    });
+    setData((prev) =>
+      toTower(flattenTower(prev).filter((item) => item.id !== id))
+    );
+    fsDelete(id).catch((err) =>
+      console.error("Firestore deleteItem failed:", err)
+    );
   };
 
-  useEffect(() => {
-    const loaded = loadData();
-    setData(loaded);
-  }, []);
-
   return (
-    <DataContext.Provider value={{ data, addItem, updateItem, deleteItem }}>
+    <DataContext.Provider value={{ data, loading, addItem, updateItem, deleteItem }}>
       {children}
     </DataContext.Provider>
   );

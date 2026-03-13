@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -162,38 +162,27 @@ function SortDropdown({
   );
 }
 
-/* ─── Mobile filter bottom sheet ─────────────────────────────────────────── */
-function MobileFilterSheet({
-  activeCategories,
-  onApply,
+/* ─── Shared sheet scaffold ──────────────────────────────────────────────── */
+function MobileSheet({
+  title,
   onClose,
+  children,
 }: {
-  activeCategories: Category[];
-  onApply: (cats: Category[]) => void;
+  title: string;
   onClose: () => void;
+  children: React.ReactNode;
 }) {
-  const [draft, setDraft] = useState<Category[]>(activeCategories);
-
-  const toggle = (cat: Category) =>
-    setDraft((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
-
-  /* body scroll lock */
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  /* Escape */
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", h);
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
-
-  const allSelected = draft.length === 0;
 
   return (
     <motion.div
@@ -201,105 +190,141 @@ function MobileFilterSheet({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: 0.14 }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
-        className="w-full rounded-t-2xl bg-white"
+        className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl bg-white"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
-        transition={{ type: "spring", stiffness: 320, damping: 38 }}
+        transition={{ type: "spring", stiffness: 340, damping: 38 }}
       >
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="h-1 w-10 rounded-full bg-neutral-200" />
         </div>
-
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-3">
-          <span className="text-base font-semibold text-neutral-900">Filter</span>
-          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200">
+          <span className="text-base font-semibold text-neutral-900">{title}</span>
+          <button
+            onClick={onClose}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
-
         <div className="h-px bg-neutral-100" />
-
-        {/* Category checkboxes */}
-        <div className="px-5 py-3">
-          {/* All option */}
-          <button
-            onClick={() => setDraft([])}
-            className="flex w-full items-center gap-3 py-3"
-          >
-            <span className={[
-              "flex h-5 w-5 items-center justify-center rounded border transition-colors",
-              allSelected ? "border-neutral-900 bg-neutral-900" : "border-neutral-300",
-            ].join(" ")}>
-              {allSelected && <Check className="h-3 w-3 text-white" />}
-            </span>
-            <span className="flex items-center gap-2 text-sm font-medium text-neutral-800">
-              <LayoutGrid className="h-4 w-4 text-neutral-500" /> All categories
-            </span>
-          </button>
-
-          {FILTER_CATEGORIES.map((cat) => {
-            const checked = draft.includes(cat);
-            const Icon = CATEGORY_ICONS[cat];
-            return (
-              <button
-                key={cat}
-                onClick={() => toggle(cat)}
-                className="flex w-full items-center gap-3 py-3"
-              >
-                <span className={[
-                  "flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border transition-colors",
-                  checked ? "border-neutral-900 bg-neutral-900" : "border-neutral-300",
-                ].join(" ")}>
-                  {checked && <Check className="h-3 w-3 text-white" />}
-                </span>
-                <span className="flex items-center gap-2 text-sm font-medium text-neutral-800">
-                  <Icon className="h-4 w-4 text-neutral-500" /> {cat}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="h-px bg-neutral-100" />
-
-        {/* Actions */}
-        <div className="flex gap-3 px-5 py-4">
-          <button
-            onClick={() => { onApply([]); onClose(); }}
-            className="flex-1 rounded-full border border-neutral-200 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50"
-          >
-            Reset
-          </button>
-          <button
-            onClick={() => { onApply(draft); onClose(); }}
-            className="flex-1 rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700"
-          >
-            Apply
-          </button>
-        </div>
-
-        {/* Safe area */}
-        <div className="h-safe-bottom pb-4" />
+        {children}
+        <div className="pb-6" />
       </motion.div>
     </motion.div>
+  );
+}
+
+/* ─── Mobile filter sheet (category only) ───────────────────────────────── */
+function MobileFilterSheet({
+  activeCategories,
+  onCategoriesChange,
+  onClose,
+}: {
+  activeCategories: Category[];
+  onCategoriesChange: (cats: Category[]) => void;
+  onClose: () => void;
+}) {
+  const allSelected = activeCategories.length === 0;
+
+  const toggleCat = (cat: Category) =>
+    onCategoriesChange(
+      activeCategories.includes(cat)
+        ? activeCategories.filter((c) => c !== cat)
+        : [...activeCategories, cat]
+    );
+
+  return (
+    <MobileSheet title="Filter" onClose={onClose}>
+      <div className="px-5 pt-4 pb-2">
+        <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-neutral-400">Category</p>
+        <button
+          onClick={() => onCategoriesChange([])}
+          className="flex min-h-[44px] w-full items-center gap-3 py-2"
+        >
+          <span className={[
+            "flex h-5 w-5 items-center justify-center rounded border transition-colors",
+            allSelected ? "border-neutral-900 bg-neutral-900" : "border-neutral-300",
+          ].join(" ")}>
+            {allSelected && <Check className="h-3 w-3 text-white" />}
+          </span>
+          <span className="flex items-center gap-2 text-sm font-medium text-neutral-800">
+            <LayoutGrid className="h-4 w-4 text-neutral-500" /> All categories
+          </span>
+        </button>
+
+        {FILTER_CATEGORIES.map((cat) => {
+          const checked = activeCategories.includes(cat);
+          const Icon = CATEGORY_ICONS[cat];
+          return (
+            <button
+              key={cat}
+              onClick={() => toggleCat(cat)}
+              className="flex min-h-[44px] w-full items-center gap-3 py-2"
+            >
+              <span className={[
+                "flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border transition-colors",
+                checked ? "border-neutral-900 bg-neutral-900" : "border-neutral-300",
+              ].join(" ")}>
+                {checked && <Check className="h-3 w-3 text-white" />}
+              </span>
+              <span className="flex items-center gap-2 text-sm font-medium text-neutral-800">
+                <Icon className="h-4 w-4 text-neutral-500" /> {cat}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </MobileSheet>
+  );
+}
+
+/* ─── Mobile sort sheet ──────────────────────────────────────────────────── */
+function MobileSortSheet({
+  sort,
+  onSortChange,
+  onClose,
+}: {
+  sort: SortOption;
+  onSortChange: (v: SortOption) => void;
+  onClose: () => void;
+}) {
+  return (
+    <MobileSheet title="Sort by" onClose={onClose}>
+      <div className="px-5 pt-4 pb-2">
+        {SORT_OPTIONS.map((opt) => {
+          const active = sort === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => { onSortChange(opt.value); onClose(); }}
+              className="flex min-h-[44px] w-full items-center justify-between py-2 text-sm text-neutral-700"
+            >
+              <span className={active ? "font-medium text-neutral-900" : ""}>{opt.label}</span>
+              {active && <Check className="h-3.5 w-3.5 text-neutral-500" />}
+            </button>
+          );
+        })}
+      </div>
+    </MobileSheet>
   );
 }
 
 /* ─── FilterBar ──────────────────────────────────────────────────────────── */
 export function FilterBar({ activeCategories, onCategoriesChange, sort, onSortChange }: FilterBarProps) {
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const activeCount = activeCategories.length;
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "Featured";
 
   return (
     <>
-      <div className="bg-[#f5f5f3]">
+      <div className="sticky top-0 z-20 border-b border-neutral-200/70 bg-[#f5f5f3]">
         <Container>
           <div className="flex items-center py-2">
 
@@ -309,11 +334,11 @@ export function FilterBar({ activeCategories, onCategoriesChange, sort, onSortCh
               onCategoriesChange={onCategoriesChange}
             />
 
-            {/* Mobile buttons */}
+            {/* Mobile: separate Filter and Sort buttons */}
             <div className="flex flex-1 items-center gap-2 md:hidden">
               <button
                 onClick={() => setFilterOpen(true)}
-                className="flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
+                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
                 Filter
@@ -323,21 +348,40 @@ export function FilterBar({ activeCategories, onCategoriesChange, sort, onSortCh
                   </span>
                 )}
               </button>
+
+              <button
+                onClick={() => setSortOpen(true)}
+                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
+              >
+                <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                <span className="font-semibold">{sortLabel}</span>
+              </button>
             </div>
 
-            {/* Sort (both) */}
-            <SortDropdown sort={sort} onSortChange={onSortChange} />
+            {/* Sort dropdown — desktop only */}
+            <div className="hidden md:block">
+              <SortDropdown sort={sort} onSortChange={onSortChange} />
+            </div>
           </div>
         </Container>
       </div>
 
-      {/* Mobile filter sheet */}
       <AnimatePresence>
         {filterOpen && (
           <MobileFilterSheet
             activeCategories={activeCategories}
-            onApply={onCategoriesChange}
+            onCategoriesChange={onCategoriesChange}
             onClose={() => setFilterOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {sortOpen && (
+          <MobileSortSheet
+            sort={sort}
+            onSortChange={onSortChange}
+            onClose={() => setSortOpen(false)}
           />
         )}
       </AnimatePresence>

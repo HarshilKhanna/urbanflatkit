@@ -12,7 +12,6 @@ interface ItemCardProps {
 
 export function ItemCard({ item, onClick }: ItemCardProps) {
   const specs = item.specs || {};
-  const category = item.category?.toLowerCase() || "";
 
   const [hoverEnabled, setHoverEnabled] = useState(false);
 
@@ -27,32 +26,31 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  let meta: string | undefined;
-
-  if (category === "furniture" || category === "appliances") {
-    meta = specs.Dimensions;
-  } else if (category === "textiles") {
-    meta = specs.Fabric || specs.Material;
-  }
+  // Read exactly what cardSpecKeys says — max 2 values joined
+  const meta = (item.cardSpecKeys ?? [])
+    .slice(0, 2)
+    .map((key) => specs[key])
+    .filter(Boolean)
+    .join(" · ") || undefined;
 
   return (
     <motion.div
       onClick={onClick}
       whileHover={hoverEnabled ? { scale: 1.02 } : undefined}
       whileTap={hoverEnabled ? { scale: 0.98 } : undefined}
-      transition={{ duration: 0.22, ease: "easeOut" }}
-      className="group cursor-pointer h-64 sm:h-64 md:h-72 xl:h-72"
+      transition={{ duration: 0.18, ease: "easeOut" }}
+      className="group cursor-pointer"
     >
-      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[--border] bg-[--tile]">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-[--border] bg-[--tile]">
 
-        {/* Image — square, fills available width */}
-        <div className="relative aspect-square w-full flex-shrink-0">
+        {/* Image — perfect square tile */}
+        <div className="relative aspect-square w-full overflow-hidden">
           {item.imageUrl ? (
             <Image
               src={item.imageUrl}
               alt={item.name}
               fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 34vw, 25vw"
               className="object-contain p-2"
             />
           ) : (
@@ -82,7 +80,8 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
             </p>
 
             {/* Line 2: brand + compact metadata (if any) */}
-            <p className="line-clamp-2 text-[11px] md:text-xs text-[--text-secondary]">
+            {/* min-h-[2.75em] = 2 × leading-snug (1.375) — reserves two lines on every card */}
+            <p className="line-clamp-2 min-h-[2.75em] leading-snug text-[11px] md:text-xs text-[--text-secondary]">
               {[item.brand, meta].filter(Boolean).join(" · ")}
             </p>
           </div>

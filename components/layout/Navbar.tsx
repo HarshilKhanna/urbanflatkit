@@ -71,22 +71,16 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
           </Link>
         </div>
 
-        {/* Desktop: center search bar */}
-        <div className="hidden w-full max-w-2xl flex-shrink-0 justify-center px-4 md:flex">
+        {/* Desktop/tablet: search icon + admin button */}
+        <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 md:flex">
           <button
             type="button"
             onClick={() => onSearchOpenChange?.(true)}
-            className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-left text-sm text-neutral-500 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50/80"
+            aria-label="Search"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
           >
-            <Search className="h-4 w-4 flex-shrink-0 text-neutral-400" />
-            <span className="truncate">
-              Search items, brands, and categories…
-            </span>
+            <Search className="h-4 w-4" />
           </button>
-        </div>
-
-        {/* Right: admin button */}
-        <div className="hidden min-w-0 flex-1 items-center justify-end md:flex">
           <Link
             href="/admin"
             className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
