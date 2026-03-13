@@ -3,6 +3,7 @@ import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { DataProvider } from "@/context/DataContext";
 import { AccommodationProvider } from "@/context/AccommodationContext";
+import { SearchProvider } from "@/context/SearchContext";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -23,7 +24,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${dmSans.variable} font-sans antialiased`}>
         <DataProvider>
-          <AccommodationProvider>{children}</AccommodationProvider>
+          <SearchProvider>
+            <AccommodationProvider>{children}</AccommodationProvider>
+          </SearchProvider>
         </DataProvider>
       </body>
     </html>

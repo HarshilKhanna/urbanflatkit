@@ -5,14 +5,13 @@ import {
   useEffect,
   useRef,
   useMemo,
-  useCallback,
   KeyboardEvent,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useData } from "@/context/DataContext";
+import { useSearch } from "@/context/SearchContext";
 import { Item } from "@/types";
-import { ItemModal } from "@/components/browse/ItemModal";
 
 /* ─── flatten helper ─────────────────────────────────────────────────────── */
 function getAllItems(data: ReturnType<typeof useData>["data"]): Item[] {
@@ -22,9 +21,9 @@ function getAllItems(data: ReturnType<typeof useData>["data"]): Item[] {
 /* ─── SearchModal ────────────────────────────────────────────────────────── */
 function SearchModal({ onClose }: { onClose: () => void }) {
   const { data } = useData();
+  const { setSearchQuery } = useSearch();
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -60,7 +59,16 @@ function SearchModal({ onClose }: { onClose: () => void }) {
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  const openItem = useCallback((item: Item) => setSelectedItem(item), []);
+  /* push query into grid whenever it changes */
+  useEffect(() => {
+    setSearchQuery(query.trim());
+    return () => setSearchQuery(""); // clear when modal closes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  const handleSelect = (_item: Item) => {
+    onClose();
+  };
 
   const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (!results.length) return;
@@ -72,125 +80,107 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       setCursor((c) => Math.max(c - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (results[cursor]) openItem(results[cursor]);
+      if (results[cursor]) handleSelect(results[cursor]);
     }
   };
 
   return (
-    <>
-      {/* Backdrop */}
+    <motion.div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[12vh] backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <motion.div
-        className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-[12vh] backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.18 }}
-        onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        className="mx-4 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+        initial={{ opacity: 0, y: -24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -16 }}
+        transition={{ type: "spring", stiffness: 400, damping: 35 }}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Panel */}
-        <motion.div
-          className="mx-4 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
-          initial={{ opacity: 0, y: -24 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ type: "spring", stiffness: 400, damping: 35 }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {/* Input row */}
-          <div className="flex items-center gap-3 px-4 py-3.5">
-            <Search className="h-4 w-4 flex-shrink-0 text-neutral-400" />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Search items, brands, categories…"
-              className="flex-1 bg-transparent text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                className="flex-shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-400 hover:text-neutral-700"
-              >
-                Clear
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="flex-shrink-0 text-neutral-400 hover:text-neutral-700"
-              aria-label="Close search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Results */}
-          <AnimatePresence initial={false}>
-            {results.length > 0 && (
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: "auto" }}
-                exit={{ height: 0 }}
-                transition={{ duration: 0.18, ease: "easeOut" }}
-                className="overflow-hidden"
-              >
-                <div className="h-px bg-neutral-100" />
-                <ul
-                  ref={listRef}
-                  className="max-h-[400px] overflow-y-auto py-1"
-                >
-                  {results.map((item, i) => (
-                    <li key={item.id}>
-                      <button
-                        onMouseEnter={() => setCursor(i)}
-                        onClick={() => openItem(item)}
-                        className={[
-                          "flex w-full flex-col px-4 py-3 text-left transition-colors",
-                          i === cursor ? "bg-neutral-50" : "hover:bg-neutral-50",
-                        ].join(" ")}
-                      >
-                        <span className="text-sm font-medium text-neutral-900">
-                          {item.name}
-                        </span>
-                        <span className="mt-0.5 text-xs text-neutral-400">
-                          /{item.category.toLowerCase()}/{item.id}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            )}
-
-            {/* No results */}
-            {query.trim() && results.length === 0 && (
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: "auto" }}
-                exit={{ height: 0 }}
-                transition={{ duration: 0.18, ease: "easeOut" }}
-                className="overflow-hidden"
-              >
-                <div className="h-px bg-neutral-100" />
-                <p className="px-4 py-6 text-center text-sm text-neutral-400">
-                  No results for &ldquo;{query.trim()}&rdquo;
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </motion.div>
-
-      {/* Item detail from search result */}
-      <AnimatePresence>
-        {selectedItem && (
-          <ItemModal
-            item={selectedItem}
-            onClose={() => { setSelectedItem(null); onClose(); }}
+        {/* Input row */}
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <Search className="h-4 w-4 flex-shrink-0 text-neutral-400" />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder="Search items, brands, categories…"
+            className="flex-1 bg-transparent text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
           />
-        )}
-      </AnimatePresence>
-    </>
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="flex-shrink-0 text-xs font-medium uppercase tracking-wide text-neutral-400 hover:text-neutral-700"
+            >
+              Clear
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 text-neutral-400 hover:text-neutral-700"
+            aria-label="Close search"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Results */}
+        <AnimatePresence initial={false}>
+          {results.length > 0 && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: "auto" }}
+              exit={{ height: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="overflow-hidden"
+            >
+              <div className="h-px bg-neutral-100" />
+              <ul ref={listRef} className="max-h-[400px] overflow-y-auto py-1">
+                {results.map((item, i) => (
+                  <li key={item.id}>
+                    <button
+                      onMouseEnter={() => setCursor(i)}
+                      onClick={() => handleSelect(item)}
+                      className={[
+                        "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
+                        i === cursor ? "bg-neutral-50" : "hover:bg-neutral-50",
+                      ].join(" ")}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-neutral-900">{item.name}</p>
+                        <p className="mt-0.5 text-xs text-neutral-400">
+                          {item.brand} · {item.category}
+                        </p>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+
+          {query.trim() && results.length === 0 && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: "auto" }}
+              exit={{ height: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="overflow-hidden"
+            >
+              <div className="h-px bg-neutral-100" />
+              <p className="px-4 py-6 text-center text-sm text-neutral-400">
+                No results for &ldquo;{query.trim()}&rdquo;
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   );
 }
 

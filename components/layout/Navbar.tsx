@@ -1,17 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Search, User, X } from "lucide-react";
+import { User, X } from "lucide-react";
 import { Container } from "./Container";
-import { SearchTrigger } from "./SearchTrigger";
 import { useAccommodation } from "@/context/AccommodationContext";
 
-interface NavbarProps {
-  searchOpen?: boolean;
-  onSearchOpenChange?: (open: boolean) => void;
-}
-
-export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
+export function Navbar() {
   const { accommodation, clear } = useAccommodation();
 
   const label =
@@ -42,7 +36,7 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
           )}
         </div>
 
-        {/* Mobile: accommodation badge + search + admin icons */}
+        {/* Mobile: accommodation badge + admin icon */}
         <div className="flex flex-shrink-0 items-center gap-2 md:hidden">
           {label && (
             <button
@@ -54,14 +48,6 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
               <X className="h-3 w-3" />
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => onSearchOpenChange?.(true)}
-            aria-label="Search"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
-          >
-            <Search className="h-4 w-4" />
-          </button>
           <Link
             href="/admin"
             aria-label="Admin"
@@ -71,16 +57,8 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
           </Link>
         </div>
 
-        {/* Desktop/tablet: search icon + admin button */}
-        <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 md:flex">
-          <button
-            type="button"
-            onClick={() => onSearchOpenChange?.(true)}
-            aria-label="Search"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
-          >
-            <Search className="h-4 w-4" />
-          </button>
+        {/* Desktop/tablet: admin button */}
+        <div className="hidden min-w-0 flex-1 items-center justify-end md:flex">
           <Link
             href="/admin"
             className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50"
@@ -89,12 +67,6 @@ export function Navbar({ searchOpen, onSearchOpenChange }: NavbarProps) {
             <span className="hidden lg:inline">Admin</span>
           </Link>
         </div>
-
-        <SearchTrigger
-          open={searchOpen}
-          onOpenChange={onSearchOpenChange}
-          hideButton
-        />
       </Container>
     </header>
   );
