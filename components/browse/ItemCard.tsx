@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Item } from "@/types";
 import { trackEvent } from "@/lib/analytics";
+import { isImagePending, PENDING_IMAGE_URL } from "@/lib/imagePending";
 
 interface ItemCardProps {
   item: Item;
@@ -79,7 +80,7 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
 
         {/* Image — perfect square tile */}
         <div className="relative aspect-square w-full overflow-hidden">
-          {item.imageUrl ? (
+          {!isImagePending(item.imageUrl) ? (
             <Image
               src={item.imageUrl}
               alt={item.name}
@@ -87,6 +88,10 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
               sizes="(max-width: 768px) 50vw, (max-width: 1024px) 34vw, 25vw"
               className="object-contain p-2"
             />
+          ) : item.imageUrl === PENDING_IMAGE_URL ? (
+            <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-neutral-400">
+              Processing…
+            </div>
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <svg

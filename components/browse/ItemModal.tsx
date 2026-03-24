@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowUpRight } from "lucide-react";
 import { Item } from "@/types";
 import { useData } from "@/context/DataContext";
+import { isImagePending, PENDING_IMAGE_URL } from "@/lib/imagePending";
 
 interface ItemModalProps {
   item: Item | null;
@@ -45,7 +46,7 @@ function RelatedItemCard({
       className="flex w-[120px] flex-shrink-0 flex-col overflow-hidden rounded-xl border border-neutral-100 bg-white text-left transition-shadow hover:shadow-md sm:min-w-0 sm:w-full"
     >
       <div className="relative aspect-square w-full bg-neutral-50">
-        {item.imageUrl ? (
+        {!isImagePending(item.imageUrl) ? (
           <Image
             src={item.imageUrl}
             alt={item.name}
@@ -53,6 +54,10 @@ function RelatedItemCard({
             sizes="132px"
             className="object-contain p-2"
           />
+        ) : item.imageUrl === PENDING_IMAGE_URL ? (
+          <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] text-neutral-400">
+            Processing…
+          </div>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-neutral-200">
             <svg
@@ -167,7 +172,7 @@ export function ItemModal({ item, onClose, onSelectItem }: ItemModalProps) {
             <div className="flex flex-1 flex-col overflow-y-auto sm:flex-row">
               {/* Image */}
               <div className="relative aspect-square w-full flex-shrink-0 bg-neutral-50 sm:w-[44%] sm:min-h-0 sm:flex-shrink-0">
-                {item.imageUrl ? (
+                {!isImagePending(item.imageUrl) ? (
                   <Image
                     src={item.imageUrl}
                     alt={item.name}
@@ -176,6 +181,10 @@ export function ItemModal({ item, onClose, onSelectItem }: ItemModalProps) {
                     className="object-contain p-6"
                     priority
                   />
+                ) : item.imageUrl === PENDING_IMAGE_URL ? (
+                  <div className="flex h-full w-full items-center justify-center px-4 text-center text-sm text-neutral-400">
+                    Processing…
+                  </div>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-neutral-200">
                     <svg

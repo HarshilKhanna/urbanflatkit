@@ -45,44 +45,48 @@ export function DailyClicksChart({ events }: { events: AnalyticsEvent[] }) {
           Not enough data yet — check back after a few days of traffic.
         </p>
       ) : (
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 10, fill: "#a3a3a3" }}
-              axisLine={false}
-              tickLine={false}
-              interval={4}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#a3a3a3" }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            />
-            <Tooltip
-              contentStyle={{
-                fontSize: 12,
-                borderRadius: 8,
-                border: "1px solid #e5e5e5",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-              cursor={{ stroke: "#e5e5e5" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="count"
-              stroke="#60a5fa"
-              strokeWidth={2}
-              dot={<Dot r={3} fill="#60a5fa" strokeWidth={0} />}
-              activeDot={{ r: 5 }}
-              isAnimationActive
-              animationDuration={800}
-              animationEasing="ease-out"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="overflow-x-auto">
+          <div className="min-w-[320px]">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "#a3a3a3" }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={4}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "#a3a3a3" }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    fontSize: 12,
+                    borderRadius: 8,
+                    border: "1px solid #e5e5e5",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  }}
+                  cursor={{ stroke: "#e5e5e5" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#60a5fa"
+                  strokeWidth={2}
+                  dot={<Dot r={3} fill="#60a5fa" strokeWidth={0} />}
+                  activeDot={{ r: 5 }}
+                  isAnimationActive
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       )}
     </div>
   );

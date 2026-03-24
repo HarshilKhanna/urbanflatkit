@@ -4,13 +4,21 @@ import {
   useMemo,
   useState,
   useRef,
+  useEffect,
   FormEvent,
   ChangeEvent,
 } from "react";
 import { X, Plus, Trash2, Upload } from "lucide-react";
+import { removeBackground, preload } from "@imgly/background-removal";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useData } from "@/context/DataContext";
 import { Item } from "@/types";
+import { storage } from "@/lib/firebase";
+import {
+  PENDING_IMAGE_URL,
+  isImagePending,
+} from "@/lib/imagePending";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -149,14 +157,222 @@ function fromAdminItem(a: AdminItem): Item {
   };
 }
 
-/** Isolated upload function — swap this out when Firebase Storage is ready */
-async function uploadImage(file: File): Promise<string> {
+function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = (err) => {
+      URL.revokeObjectURL(url);
+      reject(err);
+    };
+    img.src = url;
+  });
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function downscaleForProcessing(file: File, maxEdge = 1000): Promise<Blob> {
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const el = new Image();
+    el.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(el);
+    };
+    el.onerror = (err) => {
+      URL.revokeObjectURL(url);
+      reject(err);
+    };
+    el.src = url;
+  });
+
+  const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not initialize resize canvas");
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const resized = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.9)
+  );
+  if (!resized) throw new Error("Resize failed");
+  return resized;
+}
+
+async function compositeOnWhiteToJpegBlob(cutout: Blob): Promise<Blob> {
+  const img = await loadImageFromBlob(cutout);
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not initialize image canvas");
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+
+  const jpegBlob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.92)
+  );
+  if (!jpegBlob) throw new Error("Failed to export JPEG");
+  return jpegBlob;
+}
+
+async function uploadBlobToFirebase(blob: Blob, originalName: string): Promise<string> {
+  const stamp = Date.now();
+  const safeName = originalName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+  const path = `items/${stamp}-${safeName.replace(/\.(png|jpg|jpeg|webp)$/i, "")}.jpg`;
+  const fileRef = storageRef(storage, path);
+  await uploadBytes(fileRef, blob, { contentType: "image/jpeg" });
+  return getDownloadURL(fileRef);
+}
+
+/** Upload the original file bytes when the main pipeline fails completely */
+async function uploadOriginalImageFallback(file: File, itemId: string): Promise<string> {
+  const stamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_") || "image";
+  const path = `items/${itemId}/original-${stamp}-${safeName}`;
+  const fileRef = storageRef(storage, path);
+  await uploadBytes(fileRef, file, { contentType: file.type || "application/octet-stream" });
+  return getDownloadURL(fileRef);
+}
+
+/**
+ * After the admin saves, runs removeBackground → Storage upload, then updateItem(imageUrl).
+ * Never leaves imageUrl empty: falls back to uploading the original file if needed.
+ */
+function runDeferredImagePipeline(
+  itemId: string,
+  file: File,
+  updateItem: (id: string, patch: Partial<Item>) => void,
+) {
+  void (async () => {
+    try {
+      const { downloadUrl } = await processAndUploadImage(file);
+      updateItem(itemId, { imageUrl: downloadUrl });
+    } catch (e) {
+      console.error("[admin-upload] deferred pipeline failed:", e);
+      try {
+        const url = await uploadOriginalImageFallback(file, itemId);
+        updateItem(itemId, { imageUrl: url });
+      } catch (e2) {
+        console.error("[admin-upload] fallback upload failed, retrying:", e2);
+        try {
+          const url = await uploadOriginalImageFallback(file, `${itemId}-retry`);
+          updateItem(itemId, { imageUrl: url });
+        } catch (e3) {
+          console.error("[admin-upload] all image uploads failed:", e3);
+        }
+      }
+    }
+  })();
+}
+
+/**
+ * Upload pipeline used by the admin image input:
+ * - Remove background
+ * - Composite on white
+ * - Upload processed JPEG to Firebase Storage
+ * - Fallback to original file upload if removal fails
+ */
+async function processAndUploadImage(file: File): Promise<{ downloadUrl: string; previewDataUrl: string }> {
+  const startedAt = performance.now();
+  console.groupCollapsed("[admin-upload] start", {
+    name: file.name,
+    type: file.type,
+    sizeKB: Math.round(file.size / 1024),
+  });
+  try {
+    console.info("[admin-upload] preprocessing image...");
+    const preprocessed = await downscaleForProcessing(file, 1000);
+    console.info("[admin-upload] preprocessed", {
+      sizeKB: Math.round(preprocessed.size / 1024),
+    });
+
+    console.info("[admin-upload] removeBackground()...");
+    const publicPath =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/api/bg-assets/`
+        : "/api/bg-assets/";
+
+    const cutoutBlob = await removeBackground(preprocessed, {
+      publicPath,
+      debug: true,
+      progress: (key: string, current: number, total: number) => {
+        if (total > 0 && current % Math.max(1, Math.floor(total / 4)) === 0) {
+          console.info(`[admin-upload] ${key}: ${current}/${total}`);
+        }
+      },
+      model: "isnet_quint8",
+      device: "cpu",
+      output: {
+        format: "image/png",
+        quality: 1,
+      },
+    });
+    console.info("[admin-upload] background removed", {
+      sizeKB: Math.round(cutoutBlob.size / 1024),
+      type: cutoutBlob.type,
+    });
+
+    console.info("[admin-upload] compositing on white...");
+    const processedBlob = await compositeOnWhiteToJpegBlob(cutoutBlob);
+    console.info("[admin-upload] composited jpeg", {
+      sizeKB: Math.round(processedBlob.size / 1024),
+      type: processedBlob.type,
+    });
+
+    console.info("[admin-upload] uploading to Firebase Storage...");
+    const downloadUrl = await uploadBlobToFirebase(processedBlob, file.name);
+    console.info("[admin-upload] upload complete", { downloadUrl });
+    const previewDataUrl = await blobToDataUrl(processedBlob);
+    console.info("[admin-upload] preview generated");
+    console.info("[admin-upload] success in ms", Math.round(performance.now() - startedAt));
+    console.groupEnd();
+    return { downloadUrl, previewDataUrl };
+  } catch (err) {
+    // Never block admins: fallback to original upload
+    console.error("[admin-upload] background removal pipeline failed, fallback to original:", err);
+    console.info("[admin-upload] fallback upload to Firebase Storage (original file)");
+    const fallbackRef = storageRef(
+      storage,
+      `items/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`
+    );
+    await uploadBytes(fallbackRef, file, { contentType: file.type || "application/octet-stream" });
+    const downloadUrl = await getDownloadURL(fallbackRef);
+    const previewDataUrl = await readAsDataUrl(file);
+    console.warn("[admin-upload] fallback used", {
+      downloadUrl,
+      elapsedMs: Math.round(performance.now() - startedAt),
+    });
+    console.groupEnd();
+    return { downloadUrl, previewDataUrl };
+  }
 }
 
 function emptyAdminItem(): Omit<AdminItem, "id"> {
@@ -176,15 +392,43 @@ function emptyAdminItem(): Omit<AdminItem, "id"> {
 function ImageUpload({
   value,
   onChange,
+  onPendingFile,
+  restoredUrl,
 }: {
   value: string;
   onChange: (data: string) => void;
+  onPendingFile: (file: File | null) => void;
+  /** When clearing a replacement in edit mode, restore this URL */
+  restoredUrl?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const previewObjectUrlRef = useRef<string | null>(null);
 
-  const handleFile = async (file: File) => {
-    const data = await uploadImage(file);
-    onChange(data);
+  const [localPreview, setLocalPreview] = useState("");
+
+  const revokePreview = () => {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current);
+      previewObjectUrlRef.current = null;
+    }
+  };
+
+  // Parent-controlled URL changed (e.g. opened edit for another item). Drop any
+  // stale blob preview so it cannot override the correct existing image.
+  useEffect(() => {
+    if (value === PENDING_IMAGE_URL) return;
+    revokePreview();
+    setLocalPreview("");
+    if (inputRef.current) inputRef.current.value = "";
+  }, [value]);
+
+  const handleFile = (file: File) => {
+    revokePreview();
+    const objectUrl = URL.createObjectURL(file);
+    previewObjectUrlRef.current = objectUrl;
+    setLocalPreview(objectUrl);
+    onPendingFile(file);
+    onChange(PENDING_IMAGE_URL);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -198,6 +442,12 @@ function ImageUpload({
     if (file && file.type.startsWith("image/")) handleFile(file);
   };
 
+  const displaySrc =
+    localPreview ||
+    (value && value !== PENDING_IMAGE_URL && value.startsWith("http") ? value : "");
+
+  const showPreview = Boolean(displaySrc);
+
   return (
     <div>
       <input
@@ -207,17 +457,26 @@ function ImageUpload({
         className="hidden"
         onChange={handleChange}
       />
-      {value ? (
+      {showPreview ? (
         <div className="relative h-40 w-full overflow-hidden rounded-md border border-neutral-200">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="Preview" className="h-full w-full object-contain p-2" />
+          <img src={displaySrc} alt="Preview" className="h-full w-full object-contain p-2" />
           <button
             type="button"
-            onClick={() => onChange("")}
+            onClick={() => {
+              revokePreview();
+              setLocalPreview("");
+              onPendingFile(null);
+              onChange(restoredUrl ?? "");
+            }}
             className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-neutral-200 hover:bg-neutral-50"
           >
             <X className="h-3 w-3 text-neutral-500" />
           </button>
+        </div>
+      ) : value === PENDING_IMAGE_URL ? (
+        <div className="flex h-36 w-full items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 px-3 text-center text-xs text-neutral-400">
+          Image still processing…
         </div>
       ) : (
         <button
@@ -231,6 +490,9 @@ function ImageUpload({
           <span className="text-xs">Click to upload or drag and drop</span>
         </button>
       )}
+      <p className="mt-1 text-[11px] text-neutral-400">
+        Background is removed and the image is uploaded after you save — you can close this form immediately.
+      </p>
     </div>
   );
 }
@@ -452,25 +714,12 @@ function ItemDrawer({
   /** Positions already occupied by OTHER items (excluding the item being edited) */
   takenPositions: number[];
   onClose: () => void;
-  onSave: (item: AdminItem) => void;
+  onSave: (item: AdminItem, pendingImageFile: File | null) => void;
 }) {
   const [form, setForm] = useState<Omit<AdminItem, "id"> & { id?: string }>(initial);
   const [cardLimitMsg, setCardLimitMsg] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-
-  // Sync form when drawer opens with new data
-  const prevOpen = useRef(false);
-  if (open && !prevOpen.current) {
-    prevOpen.current = true;
-    // intentionally not using effect to avoid re-render lag
-  }
-  if (!open && prevOpen.current) {
-    prevOpen.current = false;
-  }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useMemo(() => { if (open) { setForm(initial); setErrors({}); } }, [open]);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
 
   const cardCount = form.specs.filter((s) => s.showOnCard).length;
 
@@ -510,7 +759,10 @@ function ItemDrawer({
     if (!form.category) e.category = "Category is required.";
     if (!form.externalUrl.trim()) e.externalUrl = "External URL is required.";
     else if (!form.externalUrl.startsWith("http")) e.externalUrl = "URL must start with http.";
-    if (!form.imageData) e.imageData = "An image is required.";
+    const hasImage =
+      pendingImageFile != null ||
+      (typeof form.imageData === "string" && form.imageData.startsWith("http"));
+    if (!hasImage) e.imageData = "An image is required.";
 
     // Check each spec row: label must be set and value must be non-empty
     form.specs.forEach((s, i) => {
@@ -530,13 +782,13 @@ function ItemDrawer({
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    setSaving(true);
     const id = form.id ?? createItemId(form.name);
-    onSave({ ...form, id } as AdminItem);
-    setSaving(false);
+    const imageData =
+      pendingImageFile != null ? PENDING_IMAGE_URL : form.imageData;
+    onSave({ ...form, id, imageData } as AdminItem, pendingImageFile);
   };
 
   const inputCls = "w-full rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-900 outline-none transition-colors focus:border-neutral-400 focus:bg-white";
@@ -650,6 +902,12 @@ function ItemDrawer({
             <label className={labelCls}>Image <span className="text-red-400">*</span></label>
             <ImageUpload
               value={form.imageData}
+              restoredUrl={
+                mode === "edit" && initial.imageData?.startsWith("http")
+                  ? initial.imageData
+                  : undefined
+              }
+              onPendingFile={setPendingImageFile}
               onChange={(data) => setForm((f) => ({ ...f, imageData: data }))}
             />
             {errors.imageData && <p className={errCls}>{errors.imageData}</p>}
@@ -727,10 +985,9 @@ function ItemDrawer({
           <button
             type="submit"
             form="item-form"
-            disabled={saving}
-            className="min-h-[44px] rounded-md bg-neutral-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+            className="min-h-[44px] rounded-md bg-neutral-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700"
           >
-            {saving ? "Saving…" : "Save"}
+            Save
           </button>
         </div>
         {/* Safe area on mobile */}
@@ -751,7 +1008,27 @@ export default function ItemsPage() {
   const [drawerMode, setDrawerMode] = useState<"add" | "edit">("add");
   const [drawerInitial, setDrawerInitial] = useState<Omit<AdminItem, "id"> & { id?: string }>(emptyAdminItem());
   const [editingItem, setEditingItem] = useState<Item | undefined>();
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteModalEntered, setDeleteModalEntered] = useState(false);
+  const [addDrawerNonce, setAddDrawerNonce] = useState(0);
+
+  useEffect(() => {
+    if (!deleteTarget) {
+      setDeleteModalEntered(false);
+      return;
+    }
+    setDeleteModalEntered(false);
+    const id = requestAnimationFrame(() => {
+      setDeleteModalEntered(true);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [deleteTarget]);
+
+  useEffect(() => {
+    preload({ publicPath: `${window.location.origin}/api/bg-assets/` }).catch(
+      (e) => console.warn("[admin-upload] model preload failed (will retry on upload)", e),
+    );
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -767,6 +1044,7 @@ export default function ItemsPage() {
     setDrawerMode("add");
     setDrawerInitial(emptyAdminItem());
     setEditingItem(undefined);
+    setAddDrawerNonce((n) => n + 1);
     setDrawerOpen(true);
   };
 
@@ -777,19 +1055,24 @@ export default function ItemsPage() {
     setDrawerOpen(true);
   };
 
-  const handleSave = (adminItem: AdminItem) => {
+  const handleSave = (adminItem: AdminItem, pendingFile: File | null) => {
     const item = fromAdminItem(adminItem);
     if (drawerMode === "edit") {
       updateItem(item.id, item);
     } else {
       addItem(item);
     }
+    if (pendingFile) {
+      runDeferredImagePipeline(item.id, pendingFile, updateItem);
+    }
     setDrawerOpen(false);
   };
 
-  const handleDelete = (id: string) => {
+  const confirmDeleteFromModal = () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     deleteItem(id);
-    setConfirmDeleteId(null);
+    setDeleteTarget(null);
     if (editingItem?.id === id) setDrawerOpen(false);
   };
 
@@ -857,13 +1140,17 @@ export default function ItemsPage() {
 
                 {/* Image */}
                 <td className="px-4 py-2.5">
-                  {item.imageUrl ? (
+                  {isImagePending(item.imageUrl) ? (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-neutral-100">
+                      <span className="text-xs text-neutral-400" aria-label="Processing">
+                        ...
+                      </span>
+                    </div>
+                  ) : (
                     <div className="relative h-10 w-10 overflow-hidden rounded-md bg-neutral-100">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={item.imageUrl} alt={item.name} className="h-full w-full object-contain p-0.5" />
                     </div>
-                  ) : (
-                    <div className="h-10 w-10 rounded-md bg-neutral-100" />
                   )}
                 </td>
 
@@ -881,18 +1168,16 @@ export default function ItemsPage() {
 
                 {/* Actions */}
                 <td className="px-4 py-2.5 text-xs">
-                  {confirmDeleteId === item.id ? (
-                    <span className="flex items-center gap-2">
-                      <span className="text-neutral-500">Sure?</span>
-                      <button type="button" onClick={() => handleDelete(item.id)} className="font-medium text-red-500 hover:text-red-700">Confirm</button>
-                      <button type="button" onClick={() => setConfirmDeleteId(null)} className="text-neutral-400 hover:text-neutral-700">Cancel</button>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-3">
-                      <button type="button" onClick={() => openEdit(item)} className="font-medium text-neutral-700 hover:text-neutral-900">Edit</button>
-                      <button type="button" onClick={() => setConfirmDeleteId(item.id)} className="text-neutral-400 hover:text-red-500">Delete</button>
-                    </span>
-                  )}
+                  <span className="flex items-center gap-3">
+                    <button type="button" onClick={() => openEdit(item)} className="font-medium text-neutral-700 hover:text-neutral-900">Edit</button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
+                      className="text-neutral-400 hover:text-red-500"
+                    >
+                      Delete
+                    </button>
+                  </span>
                 </td>
               </tr>
             ))}
@@ -916,13 +1201,17 @@ export default function ItemsPage() {
           >
             <div className="flex items-start gap-3">
               {/* Thumbnail */}
-              {item.imageUrl ? (
+              {isImagePending(item.imageUrl) ? (
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-neutral-100">
+                  <span className="text-xs text-neutral-400" aria-label="Processing">
+                    ...
+                  </span>
+                </div>
+              ) : (
                 <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-neutral-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.imageUrl} alt={item.name} className="h-full w-full object-contain p-0.5" />
                 </div>
-              ) : (
-                <div className="h-10 w-10 flex-shrink-0 rounded-md bg-neutral-100" />
               )}
 
               {/* Info */}
@@ -937,43 +1226,21 @@ export default function ItemsPage() {
 
             {/* Actions */}
             <div className="mt-3 flex items-center gap-4 border-t border-neutral-100 pt-2.5">
-              {confirmDeleteId === item.id ? (
-                <>
-                  <span className="text-xs text-neutral-500">Delete this item?</span>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(item.id)}
-                    className="min-h-[44px] px-1 text-xs font-medium text-red-500 hover:text-red-700"
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDeleteId(null)}
-                    className="min-h-[44px] px-1 text-xs text-neutral-400 hover:text-neutral-700"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => openEdit(item)}
-                    className="min-h-[44px] px-1 text-xs font-medium text-neutral-700 hover:text-neutral-900"
-                  >
-                    Edit
-                  </button>
-                  <div className="h-3 w-px bg-neutral-200" />
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDeleteId(item.id)}
-                    className="min-h-[44px] px-1 text-xs text-neutral-400 hover:text-red-500"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => openEdit(item)}
+                className="min-h-[44px] px-1 text-xs font-medium text-neutral-700 hover:text-neutral-900"
+              >
+                Edit
+              </button>
+              <div className="h-3 w-px bg-neutral-200" />
+              <button
+                type="button"
+                onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
+                className="min-h-[44px] px-1 text-xs text-neutral-400 hover:text-red-500"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
@@ -982,8 +1249,60 @@ export default function ItemsPage() {
         )}
       </div>
 
-      {/* Drawer */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-out ${
+              deleteModalEntered ? "opacity-100" : "opacity-0"
+            }`}
+            aria-label="Cancel delete"
+            onClick={() => setDeleteTarget(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            className={`relative z-10 max-h-[min(90vh,32rem)] w-full max-w-md overflow-y-auto rounded-xl border border-neutral-200 bg-white p-5 shadow-lg transition-all duration-200 ease-out sm:p-6 ${
+              deleteModalEntered ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            }`}
+          >
+            <h2 id="delete-dialog-title" className="break-words text-base font-bold text-neutral-900 sm:text-lg">
+              Delete {deleteTarget.name}?
+            </h2>
+            <p className="mt-2 text-sm text-neutral-500">This action cannot be undone.</p>
+            <div className="mt-6 flex w-full flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="min-h-[44px] flex-1 rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-200 sm:min-h-0 sm:px-5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteFromModal}
+                className="min-h-[44px] flex-1 rounded-md bg-red-600 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 sm:min-h-0 sm:px-5"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drawer — remount per item/add session so form + image state cannot leak between edits */}
       <ItemDrawer
+        key={
+          drawerOpen
+            ? drawerMode === "edit" && editingItem
+              ? `edit-${editingItem.id}`
+              : `add-${addDrawerNonce}`
+            : "drawer-closed"
+        }
         open={drawerOpen}
         mode={drawerMode}
         initial={drawerInitial}

@@ -24,6 +24,24 @@ import { Item } from "@/types";
 
 const COL = "items";
 
+// Firestore rejects `undefined` values. Strip them recursively from payloads.
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => stripUndefined(v))
+      .filter((v) => v !== undefined) as unknown as T;
+  }
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v === undefined) continue;
+      out[k] = stripUndefined(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 // ─── Read ──────────────────────────────────────────────────────────────────────
 
 /**
@@ -41,7 +59,7 @@ export async function getAllItems(): Promise<Item[]> {
  * Add a new item. Uses item.id as the Firestore document ID so IDs are stable.
  */
 export async function addItem(item: Item): Promise<void> {
-  await setDoc(doc(db, COL, item.id), item);
+  await setDoc(doc(db, COL, item.id), stripUndefined(item));
 }
 
 /**
@@ -49,7 +67,10 @@ export async function addItem(item: Item): Promise<void> {
  */
 export async function updateItem(id: string, data: Partial<Item>): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await updateDoc(doc(db, COL, id), data as Record<string, any>);
+  await updateDoc(
+    doc(db, COL, id),
+    stripUndefined(data) as Record<string, any>
+  );
 }
 
 /**

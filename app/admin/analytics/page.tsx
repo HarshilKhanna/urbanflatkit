@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
           Loading analytics…
         </p>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4 md:space-y-5">
           {/* Overview */}
           <OverviewCards events={events} />
 
