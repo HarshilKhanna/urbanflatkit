@@ -9,7 +9,11 @@ import {
   ChangeEvent,
 } from "react";
 import { X, Plus, Trash2, Upload } from "lucide-react";
-import { removeBackground, preload } from "@imgly/background-removal";
+import { removeBackground } from "@imgly/background-removal";
+import {
+  ensureBgRemovalWorker,
+  removeBackgroundInWorker,
+} from "@/lib/admin/bgRemovalWorkerClient";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useData } from "@/context/DataContext";
@@ -272,6 +276,10 @@ function runDeferredImagePipeline(
   updateItem: (id: string, patch: Partial<Item>) => void,
 ) {
   void (async () => {
+    // Let React paint (drawer close, pending thumbnail) before heavy work starts.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => setTimeout(resolve, 0));
+    });
     try {
       const { downloadUrl } = await processAndUploadImage(file);
       updateItem(itemId, { imageUrl: downloadUrl });
@@ -314,13 +322,12 @@ async function processAndUploadImage(file: File): Promise<{ downloadUrl: string;
       sizeKB: Math.round(preprocessed.size / 1024),
     });
 
-    console.info("[admin-upload] removeBackground()...");
     const publicPath =
       typeof window !== "undefined"
         ? `${window.location.origin}/api/bg-assets/`
         : "/api/bg-assets/";
 
-    const cutoutBlob = await removeBackground(preprocessed, {
+    const removalOptions = {
       publicPath,
       debug: true,
       progress: (key: string, current: number, total: number) => {
@@ -328,13 +335,26 @@ async function processAndUploadImage(file: File): Promise<{ downloadUrl: string;
           console.info(`[admin-upload] ${key}: ${current}/${total}`);
         }
       },
-      model: "isnet_quint8",
-      device: "cpu",
+      model: "isnet_quint8" as const,
+      device: "cpu" as const,
       output: {
-        format: "image/png",
+        format: "image/png" as const,
         quality: 1,
       },
-    });
+    };
+
+    let cutoutBlob: Blob;
+    try {
+      console.info("[admin-upload] removeBackground() (worker)…");
+      cutoutBlob = await removeBackgroundInWorker(preprocessed, publicPath);
+    } catch (workerErr) {
+      console.warn(
+        "[admin-upload] worker removal failed, main-thread fallback:",
+        workerErr,
+      );
+      console.info("[admin-upload] removeBackground() (main thread)…");
+      cutoutBlob = await removeBackground(preprocessed, removalOptions);
+    }
     console.info("[admin-upload] background removed", {
       sizeKB: Math.round(cutoutBlob.size / 1024),
       type: cutoutBlob.type,
@@ -1025,8 +1045,12 @@ export default function ItemsPage() {
   }, [deleteTarget]);
 
   useEffect(() => {
-    preload({ publicPath: `${window.location.origin}/api/bg-assets/` }).catch(
-      (e) => console.warn("[admin-upload] model preload failed (will retry on upload)", e),
+    const publicPath = `${window.location.origin}/api/bg-assets/`;
+    ensureBgRemovalWorker(publicPath).catch((e) =>
+      console.warn(
+        "[admin-upload] worker preload failed (upload will use main-thread fallback)",
+        e,
+      ),
     );
   }, []);
 

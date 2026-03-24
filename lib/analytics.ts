@@ -1,6 +1,12 @@
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+/**
+ * Cap reads so the admin dashboard stays fast as the collection grows.
+ * Firestore rejects `limit()` above 10_000 per query (hard server max).
+ */
+const MAX_EVENTS_FOR_DASHBOARD = 10_000;
+
 export interface AnalyticsEvent {
   id: string;
   type: string;
@@ -31,9 +37,13 @@ export function trackEvent(
  * Returns documents sorted newest-first.
  */
 export async function getAllEvents(): Promise<AnalyticsEvent[]> {
-  const { getDocs, query, orderBy } = await import("firebase/firestore");
+  const { getDocs, query, orderBy, limit } = await import("firebase/firestore");
   const snap = await getDocs(
-    query(collection(db, COL), orderBy("timestamp", "desc"))
+    query(
+      collection(db, COL),
+      orderBy("timestamp", "desc"),
+      limit(MAX_EVENTS_FOR_DASHBOARD),
+    ),
   );
   return snap.docs.map((d) => ({
     id: d.id,

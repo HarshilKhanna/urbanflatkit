@@ -20,13 +20,25 @@ import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
+/**
+ * Default Storage bucket if `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` is missing (e.g. on Vercel).
+ * Matches the usual Firebase console default: `{projectId}.appspot.com`.
+ * Override with the env var if your bucket name differs (e.g. `*.firebasestorage.app`).
+ */
+function resolveStorageBucket(): string | undefined {
+  const explicit = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim();
+  if (explicit) return explicit;
+  const pid = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+  return pid ? `${pid}.appspot.com` : undefined;
+}
+
 const firebaseConfig = {
-  apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-  authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-  projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-  storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: resolveStorageBucket(),
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
-  appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
 // Prevent re-initialisation in Next.js (module can be evaluated multiple times).
