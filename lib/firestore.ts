@@ -12,6 +12,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  type UpdateData,
 } from "firebase/firestore";
 import {
   ref as storageRef,
@@ -66,10 +67,9 @@ export async function addItem(item: Item): Promise<void> {
  * Partially update an existing item. Only the supplied fields are written.
  */
 export async function updateItem(id: string, data: Partial<Item>): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await updateDoc(
     doc(db, COL, id),
-    stripUndefined(data) as Record<string, any>
+    stripUndefined(data) as UpdateData<Item>
   );
 }
 
