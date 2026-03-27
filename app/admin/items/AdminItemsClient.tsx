@@ -467,7 +467,10 @@ function ImageUpload({
               revokePreview();
               setLocalPreview("");
               onPendingFile(null);
-              onChange(restoredUrl ?? "");
+              // If user is previewing a newly selected local file, revert to saved URL.
+              // If user is looking at the saved URL, clear it.
+              onChange(localPreview ? (restoredUrl ?? "") : "");
+              if (inputRef.current) inputRef.current.value = "";
             }}
             className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-neutral-200 hover:bg-neutral-50"
           >

@@ -10,11 +10,13 @@ import {
 import type { Item, Tower } from "@/types";
 import { DEFAULT_DATA } from "@/data/defaultData";
 import {
-  getAllItems,
+  subscribeAllItems,
+  subscribeProjectItems,
   addItem as fsAdd,
   updateItem as fsUpdate,
   deleteItem as fsDelete,
 } from "@/lib/firestore";
+import { ProjectContext } from "@/context/ProjectContext";
 
 interface DataContextValue {
   data: Tower;
@@ -38,24 +40,64 @@ function flattenTower(tower: Tower): Item[] {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  // Start from the bundled default so the page renders immediately (no blank flash)
-  const [data, setData] = useState<Tower>(DEFAULT_DATA);
-  const [loading, setLoading] = useState(true);
+  const projectCtx = useContext(ProjectContext);
+  const activeProject = projectCtx?.activeProject ?? null;
+  const isAdminScoped = Boolean(projectCtx);
+
+  // Public app starts with bundled defaults; admin starts blank to avoid cross-project flicker.
+  const [data, setData] = useState<Tower>(() => (isAdminScoped ? toTower([]) : DEFAULT_DATA));
+  const [loading, setLoading] = useState<boolean>(isAdminScoped);
 
   useEffect(() => {
-    getAllItems()
-      .then((items) => {
-        if (items.length > 0) {
-          // Firestore has data — use it
-          setData(toTower(items));
+    // Public app (no ProjectProvider): keep current unscoped behavior.
+    if (!projectCtx) {
+      setLoading(true);
+      const unsubscribe = subscribeAllItems(
+        (items) => {
+          if (items.length > 0) {
+            setData(toTower(items));
+          }
+          // If collection is empty (not yet migrated) keep DEFAULT_DATA visible
+          setLoading(false);
+        },
+        (err) => {
+          console.error("Firestore subscribe failed — showing local data:", err);
+          setLoading(false);
         }
-        // If collection is empty (not yet migrated) keep DEFAULT_DATA visible
-      })
-      .catch((err) => {
-        console.error("Firestore fetch failed — showing local data:", err);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      );
+      return unsubscribe;
+    }
+
+    // Admin app (with ProjectProvider): do not fetch until a project is selected.
+    if (!activeProject) {
+      // Wait until ProjectContext resolves active project before showing data.
+      if (projectCtx.loading) {
+        setLoading(true);
+        return;
+      }
+      setData(toTower([]));
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const unsubscribe = subscribeProjectItems(
+      activeProject.id,
+      (items) => {
+        if (items.length > 0) {
+          setData(toTower(items));
+        } else {
+          setData(toTower([]));
+        }
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Firestore subscribe failed — showing local data:", err);
+        setLoading(false);
+      }
+    );
+    return unsubscribe;
+  }, [projectCtx, activeProject, projectCtx?.loading]);
 
   // ─── Mutations — optimistic local update then async Firestore sync ───────
 

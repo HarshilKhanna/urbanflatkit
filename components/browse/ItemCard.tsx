@@ -9,11 +9,14 @@ import { isImagePending, PENDING_IMAGE_URL } from "@/lib/imagePending";
 
 interface ItemCardProps {
   item: Item;
+  projectId?: string;
   onClick?: () => void;
 }
 
-export function ItemCard({ item, onClick }: ItemCardProps) {
+export function ItemCard({ item, projectId, onClick }: ItemCardProps) {
+  const resolvedProjectId = projectId ?? item.projectId;
   const specs = item.specs || {};
+  const [imageFailed, setImageFailed] = useState(false);
 
   const [hoverEnabled, setHoverEnabled] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,8 +41,9 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
 
   const handleMouseEnter = () => {
     hoverTimer.current = setTimeout(() => {
+      if (!resolvedProjectId) return;
       try {
-        trackEvent("item_hovered", {
+        trackEvent(resolvedProjectId, "item_hovered", {
           itemId: item.id,
           itemName: item.name,
           category: item.category,
@@ -56,13 +60,15 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
   };
 
   const handleClick = () => {
-    try {
-      trackEvent("item_clicked", {
-        itemId: item.id,
-        itemName: item.name,
-        category: item.category,
-      });
-    } catch {}
+    if (resolvedProjectId) {
+      try {
+        trackEvent(resolvedProjectId, "item_clicked", {
+          itemId: item.id,
+          itemName: item.name,
+          category: item.category,
+        });
+      } catch {}
+    }
     onClick?.();
   };
 
@@ -80,13 +86,15 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
 
         {/* Image — perfect square tile */}
         <div className="relative aspect-square w-full overflow-hidden">
-          {!isImagePending(item.imageUrl) ? (
+          {!isImagePending(item.imageUrl) && !imageFailed ? (
             <Image
               src={item.imageUrl}
               alt={item.name}
               fill
+              unoptimized
               sizes="(max-width: 768px) 50vw, (max-width: 1024px) 34vw, 25vw"
               className="object-contain p-2"
+              onError={() => setImageFailed(true)}
             />
           ) : item.imageUrl === PENDING_IMAGE_URL ? (
             <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-neutral-400">

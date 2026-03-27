@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { getAllEvents } from "@/lib/analytics";
+import { useProject } from "@/context/ProjectContext";
 import type { AnalyticsEvent } from "@/lib/analytics";
 import { OverviewCards } from "@/components/admin/analytics/OverviewCards";
 import { ScrollDepthCard } from "@/components/admin/analytics/ScrollDepthCard";
@@ -13,15 +14,22 @@ import { DailyClicksChart } from "@/components/admin/analytics/DailyClicksChart"
 import { RecentActivityFeed } from "@/components/admin/analytics/RecentActivityFeed";
 
 export default function AnalyticsPage() {
+  const { activeProject } = useProject();
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAllEvents()
+    if (!activeProject) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    getAllEvents(activeProject.id)
       .then(setEvents)
       .catch((err) => console.error("Analytics fetch failed:", err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [activeProject]);
 
   return (
     <AdminShell>

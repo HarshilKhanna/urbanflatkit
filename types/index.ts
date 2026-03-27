@@ -8,6 +8,18 @@ export interface Item {
   specs: Record<string, string>
   cardSpecKeys: string[]
   displayPosition?: number
+  projectId?: string
+}
+
+export interface Project {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  isActive: boolean
+  adminUsername: string
+  adminPassword: string
+  createdAt: Date
 }
 
 export interface Room {

@@ -11,17 +11,18 @@ interface AdminShellProps {
 }
 
 export function AdminShell({ children }: AdminShellProps) {
-  const { isAuthenticated } = useAdminAuth();
+  const { isAuthenticated, authReady } = useAdminAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    if (!authReady) return;
     if (!isAuthenticated) {
       router.replace("/admin/login");
     }
-  }, [isAuthenticated, router]);
+  }, [authReady, isAuthenticated, router]);
 
-  if (!isAuthenticated) return null;
+  if (!authReady || !isAuthenticated) return null;
 
   return (
     <div className="flex h-screen overflow-hidden">

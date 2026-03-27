@@ -39,6 +39,8 @@ function RelatedItemCard({
   item: Item;
   onClick: () => void;
 }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
   return (
     <button
       type="button"
@@ -46,13 +48,15 @@ function RelatedItemCard({
       className="flex w-[120px] flex-shrink-0 flex-col overflow-hidden rounded-xl border border-neutral-100 bg-white text-left transition-shadow hover:shadow-md sm:min-w-0 sm:w-full"
     >
       <div className="relative aspect-square w-full bg-neutral-50">
-        {!isImagePending(item.imageUrl) ? (
+        {!isImagePending(item.imageUrl) && !imageFailed ? (
           <Image
             src={item.imageUrl}
             alt={item.name}
             fill
+            unoptimized
             sizes="132px"
             className="object-contain p-2"
+            onError={() => setImageFailed(true)}
           />
         ) : item.imageUrl === PENDING_IMAGE_URL ? (
           <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] text-neutral-400">
@@ -88,6 +92,7 @@ export function ItemModal({ item, onClose, onSelectItem }: ItemModalProps) {
   const { data } = useData();
 
   const allItems = useMemo(() => flattenItems(data), [data]);
+  const [mainImageFailed, setMainImageFailed] = useState(false);
 
   const relatedItems = useMemo(() => {
     if (!item) return [];
@@ -132,6 +137,10 @@ export function ItemModal({ item, onClose, onSelectItem }: ItemModalProps) {
 
   const specs = item ? Object.entries(item.specs ?? {}) : [];
 
+  useEffect(() => {
+    setMainImageFailed(false);
+  }, [item?.id, item?.imageUrl]);
+
   return (
     <AnimatePresence>
       {item && (
@@ -172,14 +181,16 @@ export function ItemModal({ item, onClose, onSelectItem }: ItemModalProps) {
             <div className="flex flex-1 flex-col overflow-y-auto sm:flex-row">
               {/* Image */}
               <div className="relative aspect-square w-full flex-shrink-0 bg-neutral-50 sm:w-[44%] sm:min-h-0 sm:flex-shrink-0">
-                {!isImagePending(item.imageUrl) ? (
+                {!isImagePending(item.imageUrl) && !mainImageFailed ? (
                   <Image
                     src={item.imageUrl}
                     alt={item.name}
                     fill
+                    unoptimized
                     sizes="(max-width: 640px) 100vw, 44vw"
                     className="object-contain p-6"
                     priority
+                    onError={() => setMainImageFailed(true)}
                   />
                 ) : item.imageUrl === PENDING_IMAGE_URL ? (
                   <div className="flex h-full w-full items-center justify-center px-4 text-center text-sm text-neutral-400">

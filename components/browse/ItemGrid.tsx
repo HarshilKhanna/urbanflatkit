@@ -24,6 +24,7 @@ const cardVariant = {
 
 interface ItemGridProps {
   items: Item[];
+  projectId?: string;
   onItemClick: (item: Item) => void;
   animationKey: string;
 }
@@ -31,7 +32,7 @@ interface ItemGridProps {
 const DEPTHS = ["25%", "50%", "75%", "100%"] as const;
 type Depth = (typeof DEPTHS)[number];
 
-function useScrollDepth(gridRef: React.RefObject<HTMLDivElement | null>) {
+function useScrollDepth(gridRef: React.RefObject<HTMLDivElement | null>, projectId?: string) {
   const fired = useRef<Set<Depth>>(new Set());
 
   useEffect(() => {
@@ -64,8 +65,9 @@ function useScrollDepth(gridRef: React.RefObject<HTMLDivElement | null>) {
           const depth = DEPTHS[idx];
           if (fired.current.has(depth)) continue;
           fired.current.add(depth);
+          if (!projectId) continue;
           try {
-            trackEvent("scroll_depth", { depth });
+            trackEvent(projectId, "scroll_depth", { depth });
           } catch {}
         }
       },
@@ -83,12 +85,12 @@ function useScrollDepth(gridRef: React.RefObject<HTMLDivElement | null>) {
     };
   // Re-run when the grid re-mounts (animationKey change resets the key)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [projectId]);
 }
 
-export function ItemGrid({ items, onItemClick, animationKey }: ItemGridProps) {
+export function ItemGrid({ items, projectId, onItemClick, animationKey }: ItemGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  useScrollDepth(gridRef);
+  useScrollDepth(gridRef, projectId);
 
   if (items.length === 0) {
     return (
@@ -110,7 +112,7 @@ export function ItemGrid({ items, onItemClick, animationKey }: ItemGridProps) {
       <AnimatePresence>
         {items.map((item) => (
           <motion.div key={item.id} variants={cardVariant} layout className="h-full">
-            <ItemCard item={item} onClick={() => onItemClick(item)} />
+            <ItemCard item={item} projectId={projectId} onClick={() => onItemClick(item)} />
           </motion.div>
         ))}
       </AnimatePresence>

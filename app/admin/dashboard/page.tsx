@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useData } from "@/context/DataContext";
+import { useProject } from "@/context/ProjectContext";
 import { Item } from "@/types";
 
 function flattenItems(data: ReturnType<typeof useData>["data"]): Item[] {
@@ -22,6 +23,7 @@ const STAT_CATEGORIES = ["Furniture", "Lighting", "Decor", "Textiles", "Applianc
 
 export default function DashboardPage() {
   const { data } = useData();
+  const { activeProject } = useProject();
   const allItems = useMemo(() => flattenItems(data), [data]);
 
   const stats = useMemo(() => {
@@ -37,7 +39,7 @@ export default function DashboardPage() {
       <div className="mb-6">
         <h1 className="text-base font-medium text-neutral-900">Dashboard</h1>
         <p className="mt-0.5 text-xs font-light text-neutral-400">
-          Read-only overview of the current catalogue. Changes persist until the next refresh.
+          Read-only overview of {activeProject?.name ?? "this project"}. Changes persist.
         </p>
       </div>
 

@@ -5,7 +5,7 @@ import { User, X } from "lucide-react";
 import { Container } from "./Container";
 import { useAccommodation } from "@/context/AccommodationContext";
 
-export function Navbar() {
+export function Navbar({ title = "UrbanFlatKit" }: { title?: string }) {
   const { accommodation, clear } = useAccommodation();
 
   const label =
@@ -19,7 +19,7 @@ export function Navbar() {
         {/* Left: title + accommodation indicator */}
         <div className="flex flex-1 items-center justify-start gap-3 min-w-0">
           <span className="font-semibold text-base tracking-tight text-neutral-900">
-            UrbanFlatKit
+            {title}
           </span>
 
           {label && (

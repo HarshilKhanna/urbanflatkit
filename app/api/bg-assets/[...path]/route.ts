@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 const ASSET_BASE =
   "https://staticimgly.com/@imgly/background-removal-data/1.7.0/dist/";
+export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: NextRequest,
@@ -14,8 +15,8 @@ export async function GET(
   try {
     const upstream = await fetch(upstreamUrl, {
       method: "GET",
-      // Keep route responsive and let CDN/browser cache do most work
-      cache: "force-cache",
+      // Disable Next.js data cache (assets are >2MB and exceed cache limits).
+      cache: "no-store",
     });
 
     if (!upstream.ok) {

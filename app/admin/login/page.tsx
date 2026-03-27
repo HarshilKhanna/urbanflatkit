@@ -7,19 +7,20 @@ import { ArrowLeft } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAdminAuth();
+  const { login, isAuthenticated, authReady } = useAdminAuth();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!authReady) return;
     if (isAuthenticated) router.replace("/admin/dashboard");
-  }, [isAuthenticated, router]);
+  }, [authReady, isAuthenticated, router]);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const ok = login(username, password);
+    const ok = await login(username, password);
     if (!ok) {
       setError("Incorrect username or password.");
       setPassword("");

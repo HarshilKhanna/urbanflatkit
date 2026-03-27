@@ -9,7 +9,6 @@ import {
   ChangeEvent,
 } from "react";
 import { X, Plus, Trash2, Upload } from "lucide-react";
-import { removeBackground } from "@imgly/background-removal";
 import {
   ensureBgRemovalWorker,
   removeBackgroundInWorker,
@@ -17,6 +16,7 @@ import {
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useData } from "@/context/DataContext";
+import { useProject } from "@/context/ProjectContext";
 import { Item } from "@/types";
 import { storage } from "@/lib/firebase";
 import {
@@ -94,22 +94,45 @@ function primaryDimension(item: Item): number {
   return Math.max(...nums.map(Number));
 }
 
-function sortItems(items: Item[]): Item[] {
+function baseCategorySort(items: Item[]): Item[] {
   return [...items].sort((a, b) => {
-    const posA = a.displayPosition ?? null;
-    const posB = b.displayPosition ?? null;
-
-    // Pinned items always come first, sorted by position ascending
-    if (posA !== null && posB !== null) return posA - posB;
-    if (posA !== null) return -1;
-    if (posB !== null) return 1;
-
-    // Unpinned: sort by category then dimension descending
     const catA = CATEGORY_ORDER[a.category.toLowerCase()] ?? 99;
     const catB = CATEGORY_ORDER[b.category.toLowerCase()] ?? 99;
     if (catA !== catB) return catA - catB;
     return primaryDimension(b) - primaryDimension(a);
   });
+}
+
+function sortItems(items: Item[]): Item[] {
+  const positioned: Item[] = [];
+  const unpositioned: Item[] = [];
+
+  for (const item of items) {
+    if (
+      typeof item.displayPosition === "number" &&
+      Number.isFinite(item.displayPosition) &&
+      item.displayPosition > 0
+    ) {
+      positioned.push(item);
+    } else {
+      unpositioned.push(item);
+    }
+  }
+
+  const ordered = baseCategorySort(unpositioned);
+  const sortedPositioned = [...positioned].sort((a, b) => {
+    const pa = a.displayPosition as number;
+    const pb = b.displayPosition as number;
+    if (pa !== pb) return pa - pb;
+    return a.id.localeCompare(b.id);
+  });
+
+  for (const item of sortedPositioned) {
+    const insertAt = Math.min(Math.max((item.displayPosition as number) - 1, 0), ordered.length);
+    ordered.splice(insertAt, 0, item);
+  }
+
+  return ordered;
 }
 
 function flattenItems(data: ReturnType<typeof useData>["data"]): Item[] {
@@ -353,6 +376,7 @@ async function processAndUploadImage(file: File): Promise<{ downloadUrl: string;
         workerErr,
       );
       console.info("[admin-upload] removeBackground() (main thread)…");
+      const { removeBackground } = await import("@imgly/background-removal");
       cutoutBlob = await removeBackground(preprocessed, removalOptions);
     }
     console.info("[admin-upload] background removed", {
@@ -487,7 +511,10 @@ function ImageUpload({
               revokePreview();
               setLocalPreview("");
               onPendingFile(null);
-              onChange(restoredUrl ?? "");
+              // If user is previewing a newly selected local file, revert to saved URL.
+              // If user is looking at the saved URL, clear it.
+              onChange(localPreview ? (restoredUrl ?? "") : "");
+              if (inputRef.current) inputRef.current.value = "";
             }}
             className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-neutral-200 hover:bg-neutral-50"
           >
@@ -1021,6 +1048,7 @@ function ItemDrawer({
 
 export default function ItemsPage() {
   const { data, addItem, updateItem, deleteItem } = useData();
+  const { activeProject } = useProject();
   const allItems = useMemo(() => sortItems(flattenItems(data)), [data]);
 
   const [search, setSearch] = useState("");
@@ -1080,14 +1108,20 @@ export default function ItemsPage() {
   };
 
   const handleSave = (adminItem: AdminItem, pendingFile: File | null) => {
+    if (!activeProject) {
+      console.warn("[admin-items] no active project selected; save aborted");
+      return;
+    }
     const item = fromAdminItem(adminItem);
     if (drawerMode === "edit") {
-      updateItem(item.id, item);
+      updateItem(item.id, { ...item, projectId: activeProject.id });
     } else {
-      addItem(item);
+      addItem({ ...item, projectId: activeProject.id });
     }
     if (pendingFile) {
-      runDeferredImagePipeline(item.id, pendingFile, updateItem);
+      runDeferredImagePipeline(item.id, pendingFile, (id, patch) =>
+        updateItem(id, { ...patch, projectId: activeProject.id })
+      );
     }
     setDrawerOpen(false);
   };

@@ -35,22 +35,51 @@ function primaryDimension(item: Item): number {
   return Math.max(...nums.map(Number));
 }
 
-function featuredSort(items: Item[]): Item[] {
+function baseCategorySort(items: Item[]): Item[] {
   return [...items].sort((a, b) => {
-    const posA = a.displayPosition ?? null;
-    const posB = b.displayPosition ?? null;
-
-    // Pinned items always come first, sorted by position ascending
-    if (posA !== null && posB !== null) return posA - posB;
-    if (posA !== null) return -1;
-    if (posB !== null) return 1;
-
-    // Unpinned: sort by category then dimension descending
     const catA = CATEGORY_ORDER[a.category.toLowerCase()] ?? 99;
     const catB = CATEGORY_ORDER[b.category.toLowerCase()] ?? 99;
     if (catA !== catB) return catA - catB;
     return primaryDimension(b) - primaryDimension(a);
   });
+}
+
+/**
+ * Apply absolute positions on top of base sorting:
+ * - position 1 => first item
+ * - position 2 => second item
+ * - if a position is missing, next positioned item still goes to its absolute index
+ */
+function featuredSort(items: Item[]): Item[] {
+  const positioned: Item[] = [];
+  const unpositioned: Item[] = [];
+
+  for (const item of items) {
+    if (
+      typeof item.displayPosition === "number" &&
+      Number.isFinite(item.displayPosition) &&
+      item.displayPosition > 0
+    ) {
+      positioned.push(item);
+    } else {
+      unpositioned.push(item);
+    }
+  }
+
+  const ordered = baseCategorySort(unpositioned);
+  const sortedPositioned = [...positioned].sort((a, b) => {
+    const pa = a.displayPosition as number;
+    const pb = b.displayPosition as number;
+    if (pa !== pb) return pa - pb;
+    return a.id.localeCompare(b.id);
+  });
+
+  for (const item of sortedPositioned) {
+    const insertAt = Math.min(Math.max((item.displayPosition as number) - 1, 0), ordered.length);
+    ordered.splice(insertAt, 0, item);
+  }
+
+  return ordered;
 }
 
 function sortItems(items: Item[], sort: SortOption): Item[] {
@@ -68,7 +97,7 @@ function sortItems(items: Item[], sort: SortOption): Item[] {
   }
 }
 
-export function BrowseShell() {
+export function BrowseShell({ projectId }: { projectId?: string }) {
   const { data } = useData();
   const {
     promptNeeded,
@@ -82,7 +111,12 @@ export function BrowseShell() {
   const [activeCategories, setActiveCategories] = useState<Category[]>([]);
   const [activeSort, setActiveSort] = useState<SortOption>("featured");
 
-  const allItems = useMemo(() => flattenItems(data), [data]);
+  const allItems = useMemo(() => {
+    const items = flattenItems(data);
+    if (!projectId) return items;
+    return items.filter((item) => item.projectId === projectId);
+  }, [data, projectId]);
+  const resolvedProjectId = projectId ?? allItems[0]?.projectId;
 
   const visibleItems = useMemo(() => {
     const filtered =
@@ -125,12 +159,19 @@ export function BrowseShell() {
       <section className="mx-auto max-w-[1400px] px-4 pt-4 pb-20">
         <ItemGrid
           items={visibleItems}
+          projectId={resolvedProjectId}
           onItemClick={handleItemClick}
           animationKey={animationKey}
         />
       </section>
 
-      {showPrompt && <AccommodationPrompt onSelect={select} onSkip={dismiss} />}
+      {showPrompt && (
+        <AccommodationPrompt
+          projectId={resolvedProjectId}
+          onSelect={select}
+          onSkip={dismiss}
+        />
+      )}
     </>
   );
 }
@@ -143,9 +184,11 @@ function shortLabel(opt: string): string {
 }
 
 function AccommodationPrompt({
+  projectId,
   onSelect,
   onSkip,
 }: {
+  projectId?: string;
   onSelect: (value: AccommodationType) => void;
   onSkip: () => void;
 }) {
@@ -173,9 +216,13 @@ function AccommodationPrompt({
               key={opt}
               type="button"
               onClick={() => {
-                try {
-                  trackEvent("accommodation_selected", { accommodationType: opt });
-                } catch {}
+                if (projectId) {
+                  try {
+                    trackEvent(projectId, "accommodation_selected", {
+                      accommodationType: opt,
+                    });
+                  } catch {}
+                }
                 onSelect(opt);
               }}
               className="min-h-[52px] rounded-xl border border-neutral-200 bg-white px-3 py-3 text-left text-xs font-semibold text-neutral-700 transition-all hover:border-neutral-400 hover:bg-neutral-50 active:scale-[0.98]"
