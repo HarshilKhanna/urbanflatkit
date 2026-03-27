@@ -101,10 +101,10 @@ function mapUniqueItemsFromDocs(
   const byItemId = new Map<string, { docId: string; item: Item }>();
 
   for (const d of docs) {
-    const raw = d.data() as Item;
+    const raw = d.data() as Partial<Item>;
     const effectiveId =
       typeof raw.id === "string" && raw.id.trim().length > 0 ? raw.id : d.id;
-    const next: Item = { ...raw, id: effectiveId };
+    const next = { ...raw, id: effectiveId } as Item;
     const existing = byItemId.get(effectiveId);
 
     if (!existing) {
